@@ -42,3 +42,6 @@ next-env.d.ts
 
 # lokale Testläufe gegen andere Umgebungen (siehe scripts/test-generate.mjs, TEST_OUT_SUFFIX)
 test-data/output-*prod*.pdf
+
+# Projekt-Handover mit Server-Interna: bleibt lokal, das Repo ist öffentlich
+/PROJEKT-UEBERGABE.md
