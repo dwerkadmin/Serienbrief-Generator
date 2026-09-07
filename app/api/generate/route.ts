@@ -214,7 +214,10 @@ export async function POST(req: Request) {
   try {
     const csvText = decodeCsvBytes(new Uint8Array(await csvFile.arrayBuffer()));
     const { rows } = parseCsv(csvText);
-    recipients = applyMapping(rows, mapping, anredezeileConfig, { requireEmployerFields: absenderAusCsv });
+    recipients = applyMapping(rows, mapping, anredezeileConfig, {
+      requireEmployerFields: absenderAusCsv,
+      requireChartFields: /\{\{\s*Beitragsgrafik\s*\}\}/.test(bodyHtml),
+    });
   } catch (e) {
     return err(e instanceof Error ? e.message : "CSV konnte nicht verarbeitet werden.");
   }

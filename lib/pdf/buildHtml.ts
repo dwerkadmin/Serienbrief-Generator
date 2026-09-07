@@ -1,5 +1,6 @@
 import type { Recipient } from "@/lib/csv/parseAddresses";
 import { buildAbsenderzeile } from "@/lib/absenderzeile";
+import { buildBeitragsgrafikSvg, parseGermanDecimal } from "@/lib/beitragsgrafik";
 import { getFont } from "@/lib/fonts";
 
 export type LogoPosition = "left" | "center" | "right";
@@ -56,6 +57,16 @@ export type MergeCampaignFields = {
 
 /** Ersetzt {{Feld}}-Platzhalter im HTML durch die (escaped) Werte des Empfängers bzw. der Kampagne. */
 export function applyMergeFields(html: string, recipient: Recipient, campaign: MergeCampaignFields): string {
+  // {{Beitragsgrafik}} wird NICHT escaped (Rest der Ersetzungen schon) - der
+  // Platzhalter wird durch fertiges, bereits selbst escapetes Inline-SVG ersetzt.
+  const beitragsgrafikSvg = buildBeitragsgrafikSvg({
+    eigenbeitrag: parseGermanDecimal(recipient.chartEigenbeitrag),
+    steuerErsparnis: parseGermanDecimal(recipient.chartSteuerErsparnis),
+    svErsparnis: parseGermanDecimal(recipient.chartSvErsparnis),
+    agZuschuss: parseGermanDecimal(recipient.chartAgZuschuss),
+    gesamtbeitrag: parseGermanDecimal(recipient.chartGesamtbeitrag),
+  });
+
   return html
     .replace(/\{\{\s*Vorname\s*\}\}/g, escapeHtml(recipient.vorname))
     .replace(/\{\{\s*Nachname\s*\}\}/g, escapeHtml(recipient.nachname))
@@ -65,7 +76,8 @@ export function applyMergeFields(html: string, recipient: Recipient, campaign: M
     .replace(/\{\{\s*AnsprechpartnerAnrede\s*\}\}/g, escapeHtml(campaign.ansprechpartnerAnrede))
     .replace(/\{\{\s*AnsprechpartnerName\s*\}\}/g, escapeHtml(campaign.ansprechpartnerName))
     .replace(/\{\{\s*AnsprechpartnerTelefon\s*\}\}/g, escapeHtml(campaign.ansprechpartnerTelefon))
-    .replace(/\{\{\s*AnsprechpartnerEmail\s*\}\}/g, escapeHtml(campaign.ansprechpartnerEmail));
+    .replace(/\{\{\s*AnsprechpartnerEmail\s*\}\}/g, escapeHtml(campaign.ansprechpartnerEmail))
+    .replace(/\{\{\s*Beitragsgrafik\s*\}\}/g, beitragsgrafikSvg);
 }
 
 /** "AB12CD34" -> "AB12 CD34" - besser lesbar, ohne den eigentlichen Wert zu verändern. */
@@ -343,6 +355,10 @@ export function buildFullHtml(
   .letter-body h2 { font-size: 1.25em; margin: 0 0 2mm 0; }
   .letter-body h3 { font-size: 1.05em; margin: 0 0 6mm 0; font-weight: 600; }
   .letter-body p { margin: 0 0 3.2mm 0; }
+  .letter-body ul { margin: 0 0 3.2mm 0; padding-left: 5mm; }
+  .letter-body li { margin-bottom: 1mm; }
+  .letter-body li p { margin: 0; }
+  .letter-body svg { max-width: 100%; }
 
   /* --- Seite 2 --- */
   .page2 { display: flex; flex-direction: column; }

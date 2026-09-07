@@ -16,6 +16,7 @@ const MERGE_FIELDS = [
   { token: "{{AnsprechpartnerName}}", label: "Ansprechpartner: Name" },
   { token: "{{AnsprechpartnerTelefon}}", label: "Ansprechpartner: Telefon" },
   { token: "{{AnsprechpartnerEmail}}", label: "Ansprechpartner: E-Mail" },
+  { token: "{{Beitragsgrafik}}", label: "Beitragsgrafik (Variante C)" },
 ];
 
 /** "August 2026" für den angegebenen Monats-Offset (0 = aktueller Monat). */

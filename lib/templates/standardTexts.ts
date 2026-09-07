@@ -10,8 +10,11 @@
 //   {{Unternehmensname}}, {{AnsprechpartnerAnrede}}, {{AnsprechpartnerName}},
 //   {{AnsprechpartnerTelefon}}, {{AnsprechpartnerEmail}} - kampagnenweite
 //   Felder (gelten für alle Empfänger gleich, werden in Schritt 2 gepflegt)
+//   {{Beitragsgrafik}} - Donut-Diagramm (Variante C), wird je Empfänger aus
+//   den in Schritt 4 zugeordneten Beitragsdaten-Spalten generiert (siehe
+//   lib/beitragsgrafik.ts)
 
-export type StandardTextVariant = "j-du" | "j-sie" | "f-du" | "f-sie";
+export type StandardTextVariant = "j-du" | "j-sie" | "f-du" | "f-sie" | "c-du" | "c-sie";
 
 export type StandardText = {
   id: StandardTextVariant;
@@ -88,6 +91,54 @@ export const STANDARD_TEXTS: StandardText[] = [
 <p>Sollten Sie Fragen zur betrieblichen Altersvorsorge haben, die nicht im Rahmen der Beratung geklärt werden können, steht Ihnen {{AnsprechpartnerAnrede}} {{AnsprechpartnerName}} gerne zur Verfügung. Sie erreichen {{AnsprechpartnerName}} unter der Telefonnummer {{AnsprechpartnerTelefon}} oder per E-Mail an {{AnsprechpartnerEmail}}.</p>
 <p>Wir würden uns freuen, wenn Sie das Angebot zur betrieblichen Altersvorsorge positiv aufnehmen würden.</p>
 <p>Mit freundlichen Grüßen, Ihre Geschäftsleitung</p>`.trim(),
+  },
+  {
+    id: "c-du",
+    label: "Variante „C“ – Du-Anrede",
+    duSie: "du",
+    defaultHeadline: "Warum Geld verschenken?\nSpare Steuern und Sozialabgaben mit unserer Hilfe!",
+    bodyHtml: `
+<p>{{Anredezeile}}</p>
+<p>die gesetzliche Rente allein wird für viele Menschen nicht ausreichen, um den gewohnten Lebensstandard im Alter zu sichern. Umso wichtiger ist es, heute auf den effizientesten Weg der Altersvorsorge zu setzen.</p>
+<p>Die betriebliche Altersvorsorge (bAV) bietet genau das:</p>
+<ul>
+<li><p>Steuer- und Sozialabgabenersparnis durch Entgeltumwandlung</p></li>
+<li><p>Arbeitgeberzuschüsse, die dein Vorsorgekapital direkt erhöhen</p></li>
+<li><p>Automatischer Vermögensaufbau ohne spürbare Mehrbelastung</p></li>
+<li><p>Hohe Effizienz, da ein großer Teil deiner Altersvorsorge nicht aus deinem eigenen Netto stammt</p></li>
+</ul>
+<p>{{Beitragsgrafik}}</p>
+<p><strong>Fazit:</strong> Mit der betrieblichen Altersvorsorge nutzt du einen Vorsorgeweg, bei dem mehr für deine Rente arbeitet, als du selbst einzahlst.</p>
+<p>Logge dich mit deinen persönlichen Zugangsdaten in den bAV-Videoplayer ein und lass dich zur {{Unternehmensname}}-Betriebsrente informieren.</p>
+<p>Dieses Video zeigt dir anschaulich und verständlich alle wichtigen Grundlagen zur betrieblichen Altersvorsorge. Danach erhältst du dein Angebot und erfährst centgenau, wie hoch dein persönlicher Förderanteil ausfällt.</p>
+<p>Solltest du ein persönliches Gespräch wünschen, ruf uns an. {{AnsprechpartnerAnrede}} {{AnsprechpartnerName}} steht dir gerne zur Verfügung. Tel: {{AnsprechpartnerTelefon}} oder E-Mail: {{AnsprechpartnerEmail}}.</p>
+<p>Spielt die bAV in deiner Rentenplanung derzeit keine Rolle? Kein Problem – bestätige einfach die Kenntnisnahme im Video und nimm die Beratung gerne jederzeit zu einem späteren Zeitpunkt erneut auf.</p>
+<p>Wir wünschen dir viel Spaß mit deiner betrieblichen Altersvorsorge.</p>
+<p>Deine Geschäftsleitung</p>`.trim(),
+  },
+  {
+    id: "c-sie",
+    label: "Variante „C“ – Sie-Anrede",
+    duSie: "sie",
+    defaultHeadline: "Warum Geld verschenken?\nSparen Sie Steuern und Sozialabgaben mit unserer Hilfe!",
+    bodyHtml: `
+<p>{{Anredezeile}}</p>
+<p>die gesetzliche Rente allein wird für viele Menschen nicht ausreichen, um den gewohnten Lebensstandard im Alter zu sichern. Umso wichtiger ist es, heute auf den effizientesten Weg der Altersvorsorge zu setzen.</p>
+<p>Die betriebliche Altersvorsorge (bAV) bietet genau das:</p>
+<ul>
+<li><p>Steuer- und Sozialabgabenersparnis durch Entgeltumwandlung</p></li>
+<li><p>Arbeitgeberzuschüsse, die Ihr Vorsorgekapital direkt erhöhen</p></li>
+<li><p>Automatischer Vermögensaufbau ohne spürbare Mehrbelastung</p></li>
+<li><p>Hohe Effizienz, da ein großer Teil Ihrer Altersvorsorge nicht aus Ihrem eigenen Netto stammt</p></li>
+</ul>
+<p>{{Beitragsgrafik}}</p>
+<p><strong>Fazit:</strong> Mit der betrieblichen Altersvorsorge nutzen Sie einen Vorsorgeweg, bei dem mehr für Ihre Rente arbeitet, als Sie selbst einzahlen.</p>
+<p>Loggen Sie sich mit Ihren persönlichen Zugangsdaten in den bAV-Videoplayer ein und lassen Sie sich zur {{Unternehmensname}}-Betriebsrente informieren.</p>
+<p>Dieses Video zeigt Ihnen anschaulich und verständlich alle wichtigen Grundlagen zur betrieblichen Altersvorsorge. Danach erhalten Sie Ihr Angebot und erfahren centgenau, wie hoch Ihr persönlicher Förderanteil ausfällt.</p>
+<p>Sollten Sie ein persönliches Gespräch wünschen, rufen Sie uns an. {{AnsprechpartnerAnrede}} {{AnsprechpartnerName}} steht Ihnen gerne zur Verfügung. Tel: {{AnsprechpartnerTelefon}} oder E-Mail: {{AnsprechpartnerEmail}}.</p>
+<p>Spielt die bAV in Ihrer Rentenplanung derzeit keine Rolle? Kein Problem – bestätigen Sie einfach die Kenntnisnahme im Video und nehmen Sie die Beratung gerne jederzeit zu einem späteren Zeitpunkt erneut auf.</p>
+<p>Wir wünschen Ihnen viel Spaß mit Ihrer betrieblichen Altersvorsorge.</p>
+<p>Ihre Geschäftsleitung</p>`.trim(),
   },
 ];
 

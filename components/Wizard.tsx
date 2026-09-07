@@ -168,6 +168,7 @@ export default function Wizard() {
     try {
       applyMapping(state.csvRows, state.mapping, state.anredezeileConfig, {
         requireEmployerFields: state.absenderAusCsv,
+        requireChartFields: /\{\{\s*Beitragsgrafik\s*\}\}/.test(state.bodyHtml),
       });
     } catch (e) {
       setStep(4);
