@@ -169,9 +169,11 @@ export function guessMapping(headers: string[]): ColumnMapping {
   const table: Record<SimpleField | EmployerField | ChartField, string[]> = {
     vorname: ["vorname", "firstname", "givenname"],
     nachname: ["nachname", "name", "lastname", "surname", "familyname"],
-    strasse: ["strasse", "strassehausnummer", "street", "adresse1"],
-    plz: ["plz", "postleitzahl", "zip", "zipcode", "postcode"],
-    ort: ["ort", "stadt", "city", "town"],
+    // "ArbeitnehmerStrasseHauptwohnsitz" usw. ist die reale Spaltenbenennung
+    // im dCRYPT-Export für die Empfänger-Adresse (z.B. Mail_*.csv-Dateien).
+    strasse: ["strasse", "strassehausnummer", "street", "adresse1", "arbeitnehmerstrassehauptwohnsitz"],
+    plz: ["plz", "postleitzahl", "zip", "zipcode", "postcode", "arbeitnehmerplzhauptwohnsitz"],
+    ort: ["ort", "stadt", "city", "town", "arbeitnehmerorthauptwohnsitz"],
     freischaltcode: ["freischaltcode", "code", "zugangscode", "aktivierungscode"],
     arbeitgebername: ["arbeitgebername"],
     arbeitgeberStrasse: ["arbeitgeberstrasse"],
