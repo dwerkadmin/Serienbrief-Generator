@@ -8,6 +8,7 @@ import StepAddresses from "./StepAddresses";
 import FileUploadButton from "./FileUploadButton";
 import { applyMapping } from "@/lib/csv/parseAddresses";
 import { buildConfigExport, parseConfigImport } from "@/lib/configExport";
+import { CUSTOM_FONT_ID } from "@/lib/fonts";
 import { initialWizardState, type WizardState } from "./wizardTypes";
 
 const STEPS = [
@@ -46,6 +47,9 @@ function buildFormData(state: WizardState): FormData {
   fd.set("dateMonthOffset", String(state.dateMonthOffset));
   fd.set("duSieMode", state.duSieMode);
   fd.set("fontId", state.fontId);
+  if (state.fontId === CUSTOM_FONT_ID && state.customFontFile) {
+    fd.set("customFontFile", state.customFontFile);
+  }
   fd.set("fontSizePt", String(state.fontSizePt));
   fd.set("ansprechpartnerAnrede", state.ansprechpartnerAnrede);
   fd.set("ansprechpartnerName", state.ansprechpartnerName);
@@ -132,6 +136,10 @@ export default function Wizard() {
     if (!state.bodyHtml || state.bodyHtml.replace(/<[^>]+>/g, "").trim() === "") {
       setStep(2);
       return "Bitte einen Anschreibentext eingeben (Schritt 2).";
+    }
+    if (state.fontId === CUSTOM_FONT_ID && !state.customFontFile) {
+      setStep(2);
+      return "Bitte eine eigene Schriftart-Datei (TTF/OTF) hochladen (Schritt 2).";
     }
     if (state.showHeadline && state.headlineText.trim() === "") {
       setStep(2);

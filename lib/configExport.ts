@@ -40,6 +40,7 @@ type ExportedConfig = {
   dateMonthOffset: WizardState["dateMonthOffset"];
   duSieMode: WizardState["duSieMode"];
   fontId: string;
+  customFontFile: SerializedFile | null;
   fontSizePt: number;
   ansprechpartnerAnrede: WizardState["ansprechpartnerAnrede"];
   ansprechpartnerName: string;
@@ -100,6 +101,7 @@ export async function buildConfigExport(state: WizardState): Promise<string> {
     dateMonthOffset: state.dateMonthOffset,
     duSieMode: state.duSieMode,
     fontId: state.fontId,
+    customFontFile: await serializeFile(state.customFontFile),
     fontSizePt: state.fontSizePt,
     ansprechpartnerAnrede: state.ansprechpartnerAnrede,
     ansprechpartnerName: state.ansprechpartnerName,
@@ -160,6 +162,7 @@ export function parseConfigImport(jsonText: string): Partial<WizardState> {
     dateMonthOffset: config.dateMonthOffset,
     duSieMode: config.duSieMode,
     fontId: config.fontId,
+    customFontFile: deserializeFile(config.customFontFile ?? null),
     fontSizePt: config.fontSizePt,
     ansprechpartnerAnrede: config.ansprechpartnerAnrede,
     ansprechpartnerName: config.ansprechpartnerName,

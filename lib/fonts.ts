@@ -24,8 +24,38 @@ export const FONTS: FontDef[] = [
 
 export const DEFAULT_FONT_ID = "carlito";
 
+// Sonderfall "eigene Schriftart": kein Eintrag in FONTS (keine lokal
+// mitgelieferte Datei) - der Nutzer lädt in Schritt 2 eine TTF/OTF-Datei hoch,
+// die dann request-spezifisch eingebettet wird (siehe buildCustomFontFaceCss).
+export const CUSTOM_FONT_ID = "custom";
+const CUSTOM_FONT_CSS_FAMILY = "Eigene Schriftart";
+
 export function getFont(id: string): FontDef {
+  if (id === CUSTOM_FONT_ID) {
+    return { id: CUSTOM_FONT_ID, label: "Eigene Schriftart", hint: "hochgeladen", cssFamily: CUSTOM_FONT_CSS_FAMILY };
+  }
   return FONTS.find((f) => f.id === id) ?? FONTS.find((f) => f.id === DEFAULT_FONT_ID)!;
+}
+
+/**
+ * Baut die @font-face-Deklaration für eine vom Nutzer hochgeladene TTF/OTF-Datei
+ * (Schritt 2, "Eigene Schriftart") - genau wie bei den kuratierten Schriften als
+ * data:-URI eingebettet, damit Puppeteer sie ohne Dateizugriff rendern kann. Da
+ * nur eine einzelne Datei hochgeladen wird (kein separater Fett-/Kursiv-Schnitt),
+ * erzeugt der Browser fett/kursiv bei Bedarf synthetisch aus dieser einen Schrift.
+ */
+export function buildCustomFontFaceCss(buf: Buffer, filename: string): string {
+  const isOtf = /\.otf$/i.test(filename);
+  const format = isOtf ? "opentype" : "truetype";
+  const mime = isOtf ? "font/otf" : "font/ttf";
+  return `
+@font-face {
+  font-family: "${CUSTOM_FONT_CSS_FAMILY}";
+  font-style: normal;
+  font-weight: 400;
+  src: url(data:${mime};base64,${buf.toString("base64")}) format("${format}");
+  font-display: block;
+}`;
 }
 
 /**

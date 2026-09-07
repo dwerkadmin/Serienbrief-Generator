@@ -1,7 +1,8 @@
 "use client";
 
-import { FONTS } from "@/lib/fonts";
+import { CUSTOM_FONT_ID, FONTS } from "@/lib/fonts";
 import { STANDARD_TEXTS, getStandardText } from "@/lib/templates/standardTexts";
+import FileUploadButton from "./FileUploadButton";
 import RichTextEditor from "./RichTextEditor";
 import type { StepProps } from "./wizardTypes";
 
@@ -259,7 +260,24 @@ export default function StepText({ state, update }: StepProps) {
                 {f.label} ({f.hint})
               </option>
             ))}
+            <option value={CUSTOM_FONT_ID}>Eigene Schriftart hochladen (TTF/OTF)</option>
           </select>
+          {state.fontId === CUSTOM_FONT_ID && (
+            <div className="mt-2 space-y-1.5">
+              <FileUploadButton
+                accept=".ttf,.otf"
+                onChange={(file) => update({ customFontFile: file })}
+                label="Schriftart-Datei auswählen"
+              />
+              {state.customFontFile && (
+                <p className="text-xs text-slate-500">Ausgewählt: {state.customFontFile.name}</p>
+              )}
+              <p className="text-xs text-slate-500">
+                TTF oder OTF, z.B. die Corporate-Schrift des Kunden. Bitte nur Schriften verwenden,
+                für die ihr das Recht zur Einbettung in Dokumente habt.
+              </p>
+            </div>
+          )}
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">Schriftgröße</label>

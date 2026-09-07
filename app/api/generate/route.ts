@@ -11,7 +11,7 @@ import {
   type AnredezeileConfig,
   type ColumnMapping,
 } from "@/lib/csv/parseAddresses";
-import { buildFontFaceCss } from "@/lib/fonts";
+import { buildCustomFontFaceCss, buildFontFaceCss, CUSTOM_FONT_ID } from "@/lib/fonts";
 import { buildFullHtml, type DuSieMode, type LetterheadConfig } from "@/lib/pdf/buildHtml";
 import { renderFirstPdfPageToPng } from "@/lib/pdf/letterheadToImage";
 import { renderHtmlToPdf } from "@/lib/pdf/render";
@@ -163,6 +163,19 @@ export async function POST(req: Request) {
   const fontId = String(form.get("fontId") ?? "carlito");
   const fontSizePt = Number(form.get("fontSizePt") ?? 10.5) || 10.5;
 
+  let customFontFaceCss = "";
+  if (fontId === CUSTOM_FONT_ID) {
+    const customFontFile = form.get("customFontFile");
+    if (!(customFontFile instanceof File) || customFontFile.size === 0) {
+      return err("Bitte eine eigene Schriftart-Datei (TTF oder OTF) hochladen.");
+    }
+    if (!/\.(ttf|otf)$/i.test(customFontFile.name)) {
+      return err("Die eigene Schriftart muss eine TTF- oder OTF-Datei sein.");
+    }
+    const customFontBuf = Buffer.from(await customFontFile.arrayBuffer());
+    customFontFaceCss = buildCustomFontFaceCss(customFontBuf, customFontFile.name);
+  }
+
   const ansprechpartnerAnredeRaw = String(form.get("ansprechpartnerAnrede") ?? "Frau");
   const ansprechpartnerAnrede = ansprechpartnerAnredeRaw === "Herr" ? "Herr" : "Frau";
   const ansprechpartnerName = String(form.get("ansprechpartnerName") ?? "");
@@ -215,7 +228,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const fontFaceCss = buildFontFaceCss((relPath) => readPublicFile(relPath));
+  const fontFaceCss = buildFontFaceCss((relPath) => readPublicFile(relPath)) + customFontFaceCss;
 
   let qrCodeDataUrl: string;
   try {

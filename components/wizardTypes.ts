@@ -37,6 +37,8 @@ export type WizardState = {
   dateMonthOffset: 0 | 1 | 2;
   duSieMode: DuSieMode;
   fontId: string;
+  /** Nur relevant wenn fontId === CUSTOM_FONT_ID (siehe lib/fonts.ts) */
+  customFontFile: File | null;
   fontSizePt: number;
   ansprechpartnerAnrede: "Herr" | "Frau";
   ansprechpartnerName: string;
@@ -79,6 +81,7 @@ export const initialWizardState: WizardState = {
   dateMonthOffset: 0,
   duSieMode: initialStandardText.duSie,
   fontId: DEFAULT_FONT_ID,
+  customFontFile: null,
   fontSizePt: 10.5,
   ansprechpartnerAnrede: "Frau",
   ansprechpartnerName: "",
