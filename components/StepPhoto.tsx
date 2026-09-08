@@ -4,6 +4,11 @@ import { useState } from "react";
 import { compressImageFile } from "@/lib/clientImage";
 import { BERATUNGSLINK_DOMAINS, buildBeratungslinkUrl } from "@/lib/beratungslink";
 import { STOCK_PHOTOS, stockPhotoPublicPath } from "@/lib/stockPhotos";
+import {
+  beratungQrStandardUeberschrift,
+  istBeratungQrUrlGueltig,
+  normalisiereBeratungQrUrl,
+} from "@/lib/beratungQr";
 import FileUploadButton from "./FileUploadButton";
 import type { StepProps } from "./wizardTypes";
 
@@ -133,6 +138,73 @@ export default function StepPhoto({ state, update }: StepProps) {
           </p>
         ) : (
           <p className="mt-2 text-xs text-amber-600">Bitte eine Subdomain eingeben, z.B. „mustermann“.</p>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-slate-200 p-4">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={state.beratungQrAktiv}
+            onChange={(e) => update({ beratungQrAktiv: e.target.checked })}
+            className="h-4 w-4 accent-sky-600"
+          />
+          QR-Code für die persönliche Beratung anzeigen
+        </label>
+        <p className="mb-2 mt-1 text-xs text-slate-500">
+          Zusätzlicher Block am Fuß von Seite 2 mit einem eigenen QR-Code, z.B. zur
+          Terminbuchung oder einem Kontaktformular. Name, Telefon und E-Mail des
+          Ansprechpartners aus Schritt 2 stehen dort mit dabei.
+        </p>
+
+        {state.beratungQrAktiv && (
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                Adresse, auf die der QR-Code zeigt
+              </label>
+              <input
+                type="text"
+                value={state.beratungQrUrl}
+                onChange={(e) => update({ beratungQrUrl: e.target.value })}
+                placeholder="z.B. beratung.beispiel.de/termin"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              {state.beratungQrUrl.trim() === "" ? (
+                <p className="mt-1 text-xs text-amber-600">
+                  Bitte eine Adresse eingeben oder die Option oben abwählen.
+                </p>
+              ) : istBeratungQrUrlGueltig(state.beratungQrUrl) ? (
+                <p className="mt-1 text-xs text-slate-500">
+                  QR-Code zeigt auf:{" "}
+                  <span className="font-medium text-slate-700">
+                    {normalisiereBeratungQrUrl(state.beratungQrUrl)}
+                  </span>
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-red-600">
+                  Das ergibt keine gültige Adresse. Bitte prüfen, z.B. „beratung.beispiel.de/termin“.
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                Überschrift (optional)
+              </label>
+              <input
+                type="text"
+                value={state.beratungQrUeberschrift}
+                onChange={(e) => update({ beratungQrUeberschrift: e.target.value })}
+                placeholder={beratungQrStandardUeberschrift(state.duSieMode)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Leer lassen für den Standardtext, der sich automatisch an die Du/Sie-Anrede aus
+                Schritt 2 anpasst.
+              </p>
+            </div>
+          </div>
         )}
       </div>
     </div>

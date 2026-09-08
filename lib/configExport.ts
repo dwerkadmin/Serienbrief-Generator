@@ -55,6 +55,10 @@ type ExportedConfig = {
   stockPhotoId: string;
   beratungslinkSubdomain: string;
   beratungslinkDomain: string;
+  /** Erst ab dieser Fassung vorhanden - alte Dateien haben die Felder nicht. */
+  beratungQrAktiv?: boolean;
+  beratungQrUrl?: string;
+  beratungQrUeberschrift?: string;
 
   mapping: WizardState["mapping"];
   anredezeileConfig: WizardState["anredezeileConfig"];
@@ -117,6 +121,9 @@ export async function buildConfigExport(state: WizardState): Promise<string> {
     stockPhotoId: state.stockPhotoId,
     beratungslinkSubdomain: state.beratungslinkSubdomain,
     beratungslinkDomain: state.beratungslinkDomain,
+    beratungQrAktiv: state.beratungQrAktiv,
+    beratungQrUrl: state.beratungQrUrl,
+    beratungQrUeberschrift: state.beratungQrUeberschrift,
 
     mapping: state.mapping,
     anredezeileConfig: state.anredezeileConfig,
@@ -179,6 +186,9 @@ export function parseConfigImport(jsonText: string): Partial<WizardState> {
     stockPhotoId: config.stockPhotoId,
     beratungslinkSubdomain: config.beratungslinkSubdomain,
     beratungslinkDomain: config.beratungslinkDomain,
+    beratungQrAktiv: config.beratungQrAktiv ?? false,
+    beratungQrUrl: config.beratungQrUrl ?? "",
+    beratungQrUeberschrift: config.beratungQrUeberschrift ?? "",
 
     mapping: config.mapping,
     anredezeileConfig: config.anredezeileConfig,

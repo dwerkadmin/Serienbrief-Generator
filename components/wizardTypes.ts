@@ -61,6 +61,12 @@ export type WizardState = {
   stockPhotoId: string;
   beratungslinkSubdomain: string;
   beratungslinkDomain: string;
+  /** Optionaler zweiter QR-Code am Fuß von Seite 2: Weg zur persönlichen Beratung */
+  beratungQrAktiv: boolean;
+  /** Ziel des Beratungs-QR-Codes, z.B. Terminbuchung oder Kontaktformular */
+  beratungQrUrl: string;
+  /** Leer = automatische, Du/Sie-abhängige Überschrift (siehe lib/beratungQr.ts) */
+  beratungQrUeberschrift: string;
 
   // Schritt 4: Adressliste
   csvFile: File | null;
@@ -104,6 +110,9 @@ export const initialWizardState: WizardState = {
   stockPhotoId: "1",
   beratungslinkSubdomain: "",
   beratungslinkDomain: DEFAULT_BERATUNGSLINK_DOMAIN,
+  beratungQrAktiv: false,
+  beratungQrUrl: "",
+  beratungQrUeberschrift: "",
 
   csvFile: null,
   csvHeaders: [],

@@ -9,6 +9,7 @@ import FileUploadButton from "./FileUploadButton";
 import { applyMapping } from "@/lib/csv/parseAddresses";
 import { buildConfigExport, parseConfigImport } from "@/lib/configExport";
 import { CUSTOM_FONT_ID } from "@/lib/fonts";
+import { istBeratungQrUrlGueltig } from "@/lib/beratungQr";
 import { initialWizardState, type WizardState } from "./wizardTypes";
 
 const STEPS = [
@@ -61,6 +62,11 @@ function buildFormData(state: WizardState): FormData {
   if (state.photoMode === "stock") fd.set("stockPhotoId", state.stockPhotoId);
   fd.set("beratungslinkSubdomain", state.beratungslinkSubdomain);
   fd.set("beratungslinkDomain", state.beratungslinkDomain);
+  fd.set("beratungQrAktiv", String(state.beratungQrAktiv));
+  if (state.beratungQrAktiv) {
+    fd.set("beratungQrUrl", state.beratungQrUrl);
+    fd.set("beratungQrUeberschrift", state.beratungQrUeberschrift);
+  }
 
   if (state.csvFile) fd.set("csvFile", state.csvFile);
   fd.set("mapping", JSON.stringify(state.mapping));
@@ -161,6 +167,10 @@ export default function Wizard() {
       setStep(3);
       return "Bitte die Subdomain für den Beratungslink angeben (Schritt 3).";
     }
+    if (state.beratungQrAktiv && !istBeratungQrUrlGueltig(state.beratungQrUrl)) {
+      setStep(3);
+      return "Bitte eine gültige Adresse für den Beratungs-QR-Code angeben oder die Option abwählen (Schritt 3).";
+    }
     if (!state.csvFile || state.csvRows.length === 0) {
       setStep(4);
       return "Bitte eine Adressliste hochladen (Schritt 4).";
@@ -213,7 +223,7 @@ export default function Wizard() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
-      <h1 className="mb-3 text-2xl font-semibold">Serienbrief-Generator / Mitarbeiteranschreiben</h1>
+      <h1 className="mb-3 text-2xl font-semibold">Serienbrief-Generator für Mitarbeiteranschreiben</h1>
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <button

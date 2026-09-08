@@ -37,7 +37,7 @@ function LoginForm() {
       onSubmit={handleSubmit}
       className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm"
     >
-      <h1 className="mb-1 text-xl font-semibold">Serienbrief-Generator / Mitarbeiteranschreiben</h1>
+      <h1 className="mb-1 text-xl font-semibold">Serienbrief-Generator für Mitarbeiteranschreiben</h1>
       <p className="mb-6 text-sm text-slate-500">Bitte Passwort eingeben, um fortzufahren.</p>
       <input
         type="password"

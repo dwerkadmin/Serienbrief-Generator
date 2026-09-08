@@ -1,3 +1,4 @@
+import { beratungQrStandardText, beratungQrStandardUeberschrift } from "@/lib/beratungQr";
 import type { Recipient } from "@/lib/csv/parseAddresses";
 import { buildAbsenderzeile } from "@/lib/absenderzeile";
 import { buildBeitragsgrafikSvg, parseGermanDecimal } from "@/lib/beitragsgrafik";
@@ -36,6 +37,13 @@ export type LetterConfig = {
   duSieMode: DuSieMode;
   beratungslinkUrl: string;
   qrCodeDataUrl: string; // vorab serverseitig generierter QR-Code (für beratungslinkUrl)
+  /**
+   * Optionaler zweiter QR-Code am Fuß von Seite 2 (Weg zur persönlichen
+   * Beratung). Leerer String = Block wird nicht gezeichnet.
+   */
+  beratungQrDataUrl: string;
+  /** Überschrift über diesem Block; leer = Du/Sie-abhängiger Standard */
+  beratungQrUeberschrift: string;
 };
 
 function escapeHtml(value: string): string {
@@ -252,8 +260,47 @@ function renderPage2(config: LetterConfig, recipient: Recipient): string {
         <p>Sofern Sie Ihren Wunschbetrag gefunden haben, können Sie direkt durch erneute Eingabe Ihres Freischaltcodes Ihre betriebliche Vorsorge beantragen.</p>
       </div>
     </div>
+${renderBeraterBlock(config)}
   </div>
 </section>`;
+}
+
+/**
+ * Optionaler Abschlussblock am Fuß von Seite 2: QR-Code zur persönlichen
+ * Beratung. Bewusst in der Formensprache der übrigen Seite-2-Kästen (Rahmen in
+ * der Design-Farbe) statt als Foto-Kachel - Seite 2 trägt oben schon ein großes
+ * Bild, und diese Briefe werden in Stückzahl gedruckt.
+ *
+ * Name, Telefon und E-Mail stehen zusätzlich als Text daneben: wer den Brief
+ * auf Papier ohne Handy in der Hand hält, käme mit einem QR-Code allein nicht
+ * weiter.
+ */
+function renderBeraterBlock(config: LetterConfig): string {
+  if (!config.beratungQrDataUrl) return "";
+
+  const color = config.designColor;
+  const ueberschrift =
+    config.beratungQrUeberschrift.trim() || beratungQrStandardUeberschrift(config.duSieMode);
+  const text = beratungQrStandardText(config.duSieMode);
+
+  const kontakt = [
+    `${config.ansprechpartnerAnrede} ${config.ansprechpartnerName}`.trim(),
+    config.ansprechpartnerTelefon.trim(),
+    config.ansprechpartnerEmail.trim(),
+  ]
+    .filter((t) => t !== "")
+    .map(escapeHtml)
+    .join(" &middot; ");
+
+  return `
+    <div class="p2-berater" style="border-color:${color}">
+      <div class="p2-berater-text">
+        <div class="p2-berater-title" style="color:${color}">${escapeHtml(ueberschrift)}</div>
+        <p>${escapeHtml(text)}</p>
+        ${kontakt ? `<p class="p2-berater-kontakt">${kontakt}</p>` : ""}
+      </div>
+      <img class="p2-berater-qr" src="${config.beratungQrDataUrl}" alt="QR-Code persönliche Beratung" />
+    </div>`;
 }
 
 export function buildFullHtml(
@@ -450,6 +497,31 @@ export function buildFullHtml(
   }
   .p2-code-label { font-size: 7.5pt; color: ${TEXT_COLOR}; margin-bottom: 1.5mm; }
   .p2-code-value { font-size: 12pt; font-weight: 700; letter-spacing: 0.8pt; white-space: nowrap; }
+
+  /* Optionaler Abschlussblock: QR-Code zur persönlichen Beratung.
+     Rahmen in der Design-Farbe wie die Freischaltcode-Box darüber, damit sich
+     der Block in die Formensprache von Seite 2 einfügt. */
+  .p2-berater {
+    display: flex;
+    align-items: center;
+    gap: 6mm;
+    margin-top: 7mm;
+    padding: 4mm 5mm;
+    border: 1.2pt solid;
+    border-radius: 2mm;
+  }
+  .p2-berater-text { flex: 1; }
+  .p2-berater-title { font-size: 11pt; font-weight: 700; margin-bottom: 1.5mm; }
+  .p2-berater-text p { margin: 0; }
+  .p2-berater-kontakt { margin-top: 1.5mm; font-weight: 600; }
+  /* Weißer Grund unter dem Code: QR-Leser brauchen den Kontrast, und der
+     Rahmen darf nicht bis an die Module heranreichen. */
+  .p2-berater-qr {
+    flex-shrink: 0;
+    width: 24mm;
+    height: 24mm;
+    background: #fff;
+  }
 </style>
 </head>
 <body>

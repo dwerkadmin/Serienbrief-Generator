@@ -16,6 +16,7 @@ import { buildFullHtml, type DuSieMode, type LetterheadConfig } from "@/lib/pdf/
 import { renderFirstPdfPageToPng } from "@/lib/pdf/letterheadToImage";
 import { renderHtmlToPdf } from "@/lib/pdf/render";
 import { generateQrDataUrl } from "@/lib/qr";
+import { istBeratungQrUrlGueltig, normalisiereBeratungQrUrl } from "@/lib/beratungQr";
 import { STOCK_PHOTOS } from "@/lib/stockPhotos";
 
 export const runtime = "nodejs";
@@ -241,6 +242,25 @@ export async function POST(req: Request) {
     return err("Der QR-Code konnte nicht erzeugt werden. Bitte die Beratungslink-URL prüfen.", 500);
   }
 
+  // Optionaler zweiter QR-Code am Fuß von Seite 2 (persönliche Beratung).
+  const beratungQrAktiv = form.get("beratungQrAktiv") === "true";
+  const beratungQrUeberschrift = String(form.get("beratungQrUeberschrift") ?? "");
+  let beratungQrDataUrl = "";
+  if (beratungQrAktiv) {
+    const eingabe = String(form.get("beratungQrUrl") ?? "");
+    if (!istBeratungQrUrlGueltig(eingabe)) {
+      return err(
+        "Bitte eine gültige Adresse für den Beratungs-QR-Code angeben (Schritt 3) oder die Option abwählen."
+      );
+    }
+    try {
+      beratungQrDataUrl = await generateQrDataUrl(normalisiereBeratungQrUrl(eingabe), "#000000");
+    } catch (e) {
+      console.error("Beratungs-QR-Code fehlgeschlagen:", e);
+      return err("Der Beratungs-QR-Code konnte nicht erzeugt werden. Bitte die Adresse prüfen.", 500);
+    }
+  }
+
   const html = buildFullHtml(
     {
       fontId,
@@ -263,6 +283,8 @@ export async function POST(req: Request) {
       duSieMode,
       beratungslinkUrl,
       qrCodeDataUrl,
+      beratungQrDataUrl,
+      beratungQrUeberschrift,
     },
     recipients,
     fontFaceCss
