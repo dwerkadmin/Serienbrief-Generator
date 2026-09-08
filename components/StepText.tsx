@@ -65,6 +65,32 @@ export default function StepText({ state, update }: StepProps) {
 
   return (
     <div className="space-y-8">
+      <div className="rounded-lg border border-slate-200 p-4">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={state.showHeadline}
+            onChange={(e) => update({ showHeadline: e.target.checked })}
+            className="h-4 w-4 accent-sky-600"
+          />
+          Überschrift über der Anredezeile anzeigen
+        </label>
+        <p className="mb-2 mt-1 text-xs text-slate-500">
+          Fett, etwas größer als der Fließtext, in der Design-Farbe (Schritt 1). Mehrzeilig möglich
+          — z.B. „Warum Geld verschenken?“ + „Sparen Sie Steuern und Sozialabgaben mit unserer
+          Hilfe!“.
+        </p>
+        {state.showHeadline && (
+          <textarea
+            value={state.headlineText}
+            onChange={(e) => update({ headlineText: e.target.value })}
+            rows={2}
+            placeholder={"Warum Geld verschenken?\nSparen Sie Steuern und Sozialabgaben mit unserer Hilfe!"}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+        )}
+      </div>
+
       <div>
         <h2 className="mb-1 text-lg font-semibold">Anschreibentext</h2>
         <p className="mb-3 text-sm text-slate-500">
@@ -109,36 +135,20 @@ export default function StepText({ state, update }: StepProps) {
         ))}
       </div>
 
-      <div className="rounded-lg border border-slate-200 p-4">
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <input
-            type="checkbox"
-            checked={state.showHeadline}
-            onChange={(e) => update({ showHeadline: e.target.checked })}
-            className="h-4 w-4 accent-sky-600"
-          />
-          Überschrift über der Anredezeile anzeigen
-        </label>
-        <p className="mb-2 mt-1 text-xs text-slate-500">
-          Fett, etwas größer als der Fließtext, in der Design-Farbe (Schritt 1). Mehrzeilig möglich
-          — z.B. „Warum Geld verschenken?“ + „Sparen Sie Steuern und Sozialabgaben mit unserer
-          Hilfe!“.
-        </p>
-        {state.showHeadline && (
-          <textarea
-            value={state.headlineText}
-            onChange={(e) => update({ headlineText: e.target.value })}
-            rows={2}
-            placeholder={"Warum Geld verschenken?\nSparen Sie Steuern und Sozialabgaben mit unserer Hilfe!"}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-        )}
+      <div>
+        <label className="mb-1 block text-sm font-medium">Brieftext (Seite 1)</label>
+        <RichTextEditor
+          value={state.bodyHtml}
+          onChange={(html) => update({ bodyHtml: html })}
+          mergeFields={MERGE_FIELDS}
+          minHeight="280px"
+        />
       </div>
 
       <div className="border-t-2 border-sky-600 pt-6">
         <h3 className="mb-1 text-sm font-semibold">Ansprechpartner bAV</h3>
         <p className="mb-2 text-xs text-slate-500">
-          Wird über die Platzhalter unten in der Symbolleiste des Brieftext-Editors eingefügt
+          Wird über die Platzhalter in der Symbolleiste des Brieftext-Editors eingefügt
           (bereits in allen Standardvorlagen enthalten).
         </p>
         <div className="grid grid-cols-2 gap-3">
@@ -200,16 +210,6 @@ export default function StepText({ state, update }: StepProps) {
             />
           </div>
         </div>
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium">Brieftext (Seite 1)</label>
-        <RichTextEditor
-          value={state.bodyHtml}
-          onChange={(html) => update({ bodyHtml: html })}
-          mergeFields={MERGE_FIELDS}
-          minHeight="280px"
-        />
       </div>
 
       <div className="rounded-lg border border-slate-200 p-4">
