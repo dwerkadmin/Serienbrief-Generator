@@ -41,6 +41,13 @@ body {
   margin: 0 0 0.7em 1.2em;
   list-style: disc;
 }
+/* Aufzählungspunkte sollen denselben Abstand haben wie Fließtext-Zeilen.
+   StarterKit erzeugt <ul><li><p>…</p></li></ul>, ohne diese Regel greift auf
+   das innere <p> die Absatzregel oben (0.7em) und zieht die Punkte auseinander.
+   Gegenstück in der PDF: ".letter-body li p" in lib/pdf/buildHtml.ts. */
+.letter-editor li p {
+  margin: 0;
+}
 
 /* Kuratierte Schriftarten (siehe lib/fonts.ts) auch im Browser verfügbar
    machen, für die Live-Vorschau bei der Schriftauswahl (StepText). Gleiche

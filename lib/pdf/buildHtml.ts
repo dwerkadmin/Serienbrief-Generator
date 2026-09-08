@@ -356,7 +356,8 @@ export function buildFullHtml(
   .letter-body h3 { font-size: 1.05em; margin: 0 0 6mm 0; font-weight: 600; }
   .letter-body p { margin: 0 0 3.2mm 0; }
   .letter-body ul { margin: 0 0 3.2mm 0; padding-left: 5mm; }
-  .letter-body li { margin-bottom: 1mm; }
+  /* Aufzaehlungspunkte im gleichen Abstand wie Fliesstext-Zeilen (kein Extra-Rand). */
+  .letter-body li { margin-bottom: 0; }
   .letter-body li p { margin: 0; }
   .letter-body svg { max-width: 100%; }
 
