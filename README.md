@@ -12,7 +12,7 @@ cp .env.example .env.local   # APP_PASSWORD setzen
 npm run dev
 ```
 
-Dann `http://localhost:3000` öffnen und mit dem in `.env.local` gesetzten Passwort einloggen.
+Dann `http://localhost:3002` öffnen und mit dem in `.env.local` gesetzten Passwort einloggen.
 
 Eine Test-Adressliste liegt unter `test-data/beispiel-adressen.csv`.
 

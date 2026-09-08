@@ -3,7 +3,7 @@
 // "Musterdatei verwenden"-Button im Wizard auslöst.
 import fs from "node:fs";
 
-const BASE = process.env.TEST_BASE_URL ?? "http://localhost:3000";
+const BASE = process.env.TEST_BASE_URL ?? "http://localhost:3002";
 const PASSWORD = process.env.TEST_PASSWORD ?? "changeme";
 
 async function login() {

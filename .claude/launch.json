@@ -4,7 +4,7 @@
     {
       "name": "serienbrief-dev",
       "runtimeExecutable": "npm.cmd",
-      "runtimeArgs": ["run", "dev", "--", "--port", "3002"],
+      "runtimeArgs": ["run", "dev"],
       "port": 3002
     }
   ]

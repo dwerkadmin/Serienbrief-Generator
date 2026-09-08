@@ -2,6 +2,7 @@
 
 import { CUSTOM_FONT_ID, FONTS } from "@/lib/fonts";
 import { STANDARD_TEXTS, getStandardText } from "@/lib/templates/standardTexts";
+import type { StandardText, StandardTextVariant } from "@/lib/templates/standardTexts";
 import FileUploadButton from "./FileUploadButton";
 import RichTextEditor from "./RichTextEditor";
 import type { StepProps } from "./wizardTypes";
@@ -27,62 +28,72 @@ function monthYearLabel(offset: number): string {
   return d.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
 }
 
+/**
+ * Standardvorlagen nach Variante gruppieren, je Variante eine Knopfzeile:
+ * "j-du"/"j-sie" -> Variante A, "f-*" -> B, "c-*" -> C.
+ *
+ * Bewusst aus den Daten abgeleitet und nicht mehr fest zugeschnitten: die
+ * frühere Fassung zeichnete STANDARD_TEXTS.slice(0,2) und .slice(2,4), wodurch
+ * die später ergänzte Variante C unsichtbar blieb, obwohl Vorlagentext und
+ * Beitragsgrafik längst funktionierten. Eine neue Variante erscheint hier jetzt
+ * automatisch.
+ */
+function vorlagenNachVariante(): StandardText[][] {
+  const gruppen = new Map<string, StandardText[]>();
+  for (const t of STANDARD_TEXTS) {
+    const variante = t.id.split("-")[0];
+    const vorhandene = gruppen.get(variante);
+    if (vorhandene) vorhandene.push(t);
+    else gruppen.set(variante, [t]);
+  }
+  return [...gruppen.values()];
+}
+
 export default function StepText({ state, update }: StepProps) {
+  const vorlagenZeilen = vorlagenNachVariante();
+
+  function vorlageUebernehmen(id: StandardTextVariant) {
+    const std = getStandardText(id);
+    update({
+      bodyHtml: std.bodyHtml,
+      duSieMode: std.duSie,
+      showHeadline: std.defaultHeadline !== "",
+      headlineText: std.defaultHeadline,
+    });
+  }
+
   return (
     <div className="space-y-8">
       <div>
         <h2 className="mb-1 text-lg font-semibold">Anschreibentext</h2>
         <p className="mb-3 text-sm text-slate-500">
-          Wähle eine der vier Standardvorlagen als Ausgangspunkt oder schreibe einen eigenen Text.
-          Der Text bleibt danach frei bearbeitbar — Formatierung, Platzhalter usw.
+          Wähle eine der {STANDARD_TEXTS.length} Standardvorlagen als Ausgangspunkt oder schreibe
+          einen eigenen Text. Der Text bleibt danach frei bearbeitbar — Formatierung, Platzhalter
+          usw.
         </p>
-        <div className="flex flex-wrap gap-2">
-          {STANDARD_TEXTS.slice(0, 2).map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => {
-                const std = getStandardText(t.id);
-                update({
-                  bodyHtml: std.bodyHtml,
-                  duSieMode: std.duSie,
-                  showHeadline: std.defaultHeadline !== "",
-                  headlineText: std.defaultHeadline,
-                });
-              }}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-100"
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {STANDARD_TEXTS.slice(2, 4).map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => {
-                const std = getStandardText(t.id);
-                update({
-                  bodyHtml: std.bodyHtml,
-                  duSieMode: std.duSie,
-                  showHeadline: std.defaultHeadline !== "",
-                  headlineText: std.defaultHeadline,
-                });
-              }}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-100"
-            >
-              {t.label}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => update({ bodyHtml: "<p>{{Anredezeile}}</p><p></p>" })}
-            className="rounded-lg border border-dashed border-slate-400 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
-          >
-            Leer beginnen
-          </button>
-        </div>
+        {vorlagenZeilen.map((zeile, i) => (
+          <div key={zeile[0].id} className={`flex flex-wrap gap-2${i > 0 ? " mt-2" : ""}`}>
+            {zeile.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => vorlageUebernehmen(t.id)}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-100"
+              >
+                {t.label}
+              </button>
+            ))}
+            {i === vorlagenZeilen.length - 1 && (
+              <button
+                type="button"
+                onClick={() => update({ bodyHtml: "<p>{{Anredezeile}}</p><p></p>" })}
+                className="rounded-lg border border-dashed border-slate-400 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+              >
+                Leer beginnen
+              </button>
+            )}
+          </div>
+        ))}
       </div>
 
       <div className="rounded-lg border border-slate-200 p-4">
@@ -115,7 +126,7 @@ export default function StepText({ state, update }: StepProps) {
         <h3 className="mb-1 text-sm font-semibold">Ansprechpartner bAV</h3>
         <p className="mb-2 text-xs text-slate-500">
           Wird über die Platzhalter unten in der Symbolleiste des Brieftext-Editors eingefügt
-          (bereits in allen vier Standardvorlagen enthalten).
+          (bereits in allen Standardvorlagen enthalten).
         </p>
         <div className="grid grid-cols-2 gap-3">
           <div>

@@ -5,7 +5,7 @@
 //   TEST_BASE_URL=https://serienbrief-generator.vercel.app TEST_PASSWORD=... node scripts/test-generate.mjs
 import fs from "node:fs";
 
-const BASE = process.env.TEST_BASE_URL ?? "http://localhost:3000";
+const BASE = process.env.TEST_BASE_URL ?? "http://localhost:3002";
 const PASSWORD = process.env.TEST_PASSWORD ?? "changeme";
 const OUT_SUFFIX = process.env.TEST_OUT_SUFFIX ?? "";
 
