@@ -56,3 +56,6 @@ test-data/output-*prod*.pdf
 /.config/
 /.local/
 /.npm/
+
+# Ergebnis-PDFs von scripts/test-variante-c.mjs - Testartefakte, nicht ins Repo
+/test-data/output-variante-c*.pdf
