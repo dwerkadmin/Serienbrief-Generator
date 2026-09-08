@@ -1,6 +1,5 @@
 import type { AnredezeileConfig, ColumnMapping } from "@/lib/csv/parseAddresses";
 import { DEFAULT_FONT_ID } from "@/lib/fonts";
-import { beratungQrStandardUeberschrift } from "@/lib/beratungQr";
 import { getStandardText } from "@/lib/templates/standardTexts";
 import type { StandardTextVariant } from "@/lib/templates/standardTexts";
 import type { DuSieMode } from "@/lib/pdf/buildHtml";
@@ -113,10 +112,7 @@ export const initialWizardState: WizardState = {
   beratungslinkDomain: DEFAULT_BERATUNGSLINK_DOMAIN,
   beratungQrAktiv: false,
   beratungQrUrl: "",
-  // Gleich mit dem Sie-Standard vorbelegt. Dadurch
-  // greift die automatische Du/Sie-Anpassung nicht mehr — die gilt nur bei
-  // leerem Feld. Wer die Du-Fassung will, ändert den Text oder leert das Feld.
-  beratungQrUeberschrift: beratungQrStandardUeberschrift("sie"),
+  beratungQrUeberschrift: "",
 
   csvFile: null,
   csvHeaders: [],
