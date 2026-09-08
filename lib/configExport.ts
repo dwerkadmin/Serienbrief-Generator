@@ -34,6 +34,9 @@ type ExportedConfig = {
   absenderAusCsv: boolean;
 
   bodyHtml: string;
+  /** Erst ab der zweiten Fassung dieser Datei vorhanden - alte Konfigurationen
+   * haben das Feld nicht, beim Laden gilt dann null (keine Vorlage markiert). */
+  standardTextId?: WizardState["standardTextId"];
   showHeadline: boolean;
   headlineText: string;
   showDate: boolean;
@@ -95,6 +98,7 @@ export async function buildConfigExport(state: WizardState): Promise<string> {
     absenderAusCsv: state.absenderAusCsv,
 
     bodyHtml: state.bodyHtml,
+    standardTextId: state.standardTextId,
     showHeadline: state.showHeadline,
     headlineText: state.headlineText,
     showDate: state.showDate,
@@ -156,6 +160,7 @@ export function parseConfigImport(jsonText: string): Partial<WizardState> {
     absenderAusCsv: config.absenderAusCsv ?? false,
 
     bodyHtml: config.bodyHtml,
+    standardTextId: config.standardTextId ?? null,
     showHeadline: config.showHeadline,
     headlineText: config.headlineText,
     showDate: config.showDate,

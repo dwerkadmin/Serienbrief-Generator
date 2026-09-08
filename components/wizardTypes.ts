@@ -1,6 +1,7 @@
 import type { AnredezeileConfig, ColumnMapping } from "@/lib/csv/parseAddresses";
 import { DEFAULT_FONT_ID } from "@/lib/fonts";
 import { getStandardText } from "@/lib/templates/standardTexts";
+import type { StandardTextVariant } from "@/lib/templates/standardTexts";
 import type { DuSieMode } from "@/lib/pdf/buildHtml";
 import { DEFAULT_BERATUNGSLINK_DOMAIN } from "@/lib/beratungslink";
 
@@ -31,6 +32,15 @@ export type WizardState = {
   // oder frei bearbeitet/individuell (c); technisch dasselbe Feld, die
   // Vorlagen-Buttons in StepText befüllen es nur initial.
   bodyHtml: string;
+  /**
+   * Welche Standardvorlage als Ausgangspunkt gewählt wurde, damit der
+   * zugehörige Knopf in Schritt 2 markiert bleibt. Rein informativ - der Text
+   * in bodyHtml ist danach frei bearbeitbar und kann längst abweichen; null
+   * nach "Leer beginnen". Absichtlich keine Ableitung durch Textvergleich:
+   * die Markierung soll die Wahl anzeigen und nicht beim ersten Tastendruck
+   * verschwinden.
+   */
+  standardTextId: StandardTextVariant | null;
   showHeadline: boolean;
   headlineText: string;
   showDate: boolean;
@@ -75,6 +85,7 @@ export const initialWizardState: WizardState = {
   absenderAusCsv: false,
 
   bodyHtml: initialStandardText.bodyHtml,
+  standardTextId: "j-sie",
   showHeadline: initialStandardText.defaultHeadline !== "",
   headlineText: initialStandardText.defaultHeadline,
   showDate: true,

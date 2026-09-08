@@ -56,6 +56,7 @@ export default function StepText({ state, update }: StepProps) {
     const std = getStandardText(id);
     update({
       bodyHtml: std.bodyHtml,
+      standardTextId: id,
       duSieMode: std.duSie,
       showHeadline: std.defaultHeadline !== "",
       headlineText: std.defaultHeadline,
@@ -78,15 +79,27 @@ export default function StepText({ state, update }: StepProps) {
                 key={t.id}
                 type="button"
                 onClick={() => vorlageUebernehmen(t.id)}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-100"
+                aria-pressed={state.standardTextId === t.id}
+                className={`rounded-lg border px-3 py-1.5 text-sm ${
+                  state.standardTextId === t.id
+                    ? "border-sky-600 bg-sky-600 text-white"
+                    : "border-slate-300 bg-white hover:bg-slate-100"
+                }`}
               >
                 {t.label}
               </button>
             ))}
+            {/* "Leer beginnen" wird bewusst nie markiert: es ist eine Aktion, kein
+                Zustand. standardTextId === null heißt sowohl "leer angefangen" als
+                auch "unbekannt" (Konfigurationsdateien von vor diesem Feld) - eine
+                Markierung würde dort fälschlich "leer" behaupten, obwohl ein
+                vollständiger Brieftext geladen ist. */}
             {i === vorlagenZeilen.length - 1 && (
               <button
                 type="button"
-                onClick={() => update({ bodyHtml: "<p>{{Anredezeile}}</p><p></p>" })}
+                onClick={() =>
+                  update({ bodyHtml: "<p>{{Anredezeile}}</p><p></p>", standardTextId: null })
+                }
                 className="rounded-lg border border-dashed border-slate-400 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
               >
                 Leer beginnen
