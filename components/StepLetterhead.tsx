@@ -12,6 +12,17 @@ const POSITIONS: { id: LogoPosition; label: string }[] = [
   { id: "right", label: "Oben rechts" },
 ];
 
+/**
+ * Neutrales Platzhalter-Logo ("COMPANY / SLOGAN") für Testläufe und
+ * Vorführungen, wenn gerade kein Kundenlogo zur Hand ist. Liegt unter public/,
+ * wird also wie jede andere statische Datei ausgeliefert; beim Klick holen wir
+ * es und geben es in dieselbe Verarbeitung wie ein hochgeladenes Logo.
+ * Der weiße Rand des Originals ist bewusst weggeschnitten - das Logo wird in
+ * der PDF auf 22 mm Höhe eingepasst (.logo-header img in lib/pdf/buildHtml.ts)
+ * und wirkte mit Rand darin viel zu klein.
+ */
+const BEISPIEL_LOGO_PFAD = "/beispiel/beispiel-logo.jpg";
+
 const COLOR_SOURCE_LABEL: Record<string, string> = {
   "theme-color": "aus der theme-color der Webseite",
   "logo-pixel": "aus dem Logo geschätzt",
@@ -24,6 +35,8 @@ export default function StepLetterhead({ state, update }: StepProps) {
   const [fetchingLogo, setFetchingLogo] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [colorSourceNote, setColorSourceNote] = useState<string | null>(null);
+  const [holeBeispielLogo, setHoleBeispielLogo] = useState(false);
+  const [beispielLogoFehler, setBeispielLogoFehler] = useState<string | null>(null);
 
   async function handleLetterheadFile(file: File | null) {
     if (!file) {
@@ -48,6 +61,21 @@ export default function StepLetterhead({ state, update }: StepProps) {
     update({ logoFile: processed });
     setPreview(URL.createObjectURL(processed));
     setColorSourceNote(null);
+  }
+
+  async function beispielLogoVerwenden() {
+    setHoleBeispielLogo(true);
+    setBeispielLogoFehler(null);
+    try {
+      const res = await fetch(BEISPIEL_LOGO_PFAD);
+      if (!res.ok) throw new Error(String(res.status));
+      const blob = await res.blob();
+      await handleLogoFile(new File([blob], "beispiel-logo.jpg", { type: "image/jpeg" }));
+    } catch {
+      setBeispielLogoFehler("Beispiel-Logo konnte nicht geladen werden.");
+    } finally {
+      setHoleBeispielLogo(false);
+    }
   }
 
   async function handleFetchLogo() {
@@ -168,11 +196,28 @@ export default function StepLetterhead({ state, update }: StepProps) {
       {state.letterheadMode === "logo" && (
         <div className="space-y-4">
           <div>
-            <FileUploadButton
-              accept="image/png,image/jpeg,image/webp"
-              onChange={handleLogoFile}
-              label="Logo auswählen"
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <FileUploadButton
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleLogoFile}
+                label="Logo auswählen"
+              />
+              <span className="text-xs text-slate-400">oder</span>
+              <button
+                type="button"
+                onClick={beispielLogoVerwenden}
+                disabled={holeBeispielLogo}
+                title="Neutrales Platzhalter-Logo, wenn gerade kein Kundenlogo zur Hand ist"
+                className="flex items-center gap-2 rounded-lg border border-dashed border-slate-400 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={BEISPIEL_LOGO_PFAD} alt="" className="h-5 w-auto" />
+                {holeBeispielLogo ? "wird geladen …" : "Beispiel-Logo verwenden"}
+              </button>
+            </div>
+            {beispielLogoFehler && (
+              <p className="mt-1 text-sm text-red-600">{beispielLogoFehler}</p>
+            )}
             {state.logoFile && (
               <p className="mt-1 text-sm text-slate-700">
                 Ausgewählt: <span className="font-medium">{state.logoFile.name}</span>
