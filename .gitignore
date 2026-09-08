@@ -45,3 +45,14 @@ test-data/output-*prod*.pdf
 
 # Projekt-Handover mit Server-Interna: bleibt lokal, das Repo ist öffentlich
 /PROJEKT-UEBERGABE.md
+
+# Server-Setup mit Hostnamen/IPs: bleibt lokal, das Repo ist öffentlich
+/deploy/
+
+# Auf dem Server zeigt HOME auf das App-Verzeichnis (systemd-Unit setzt
+# ProtectHome=true, /home ist dort nicht beschreibbar). npm und Chromium legen
+# ihre Caches deshalb hier ab - sie gehoeren nicht ins Repo.
+/.cache/
+/.config/
+/.local/
+/.npm/
