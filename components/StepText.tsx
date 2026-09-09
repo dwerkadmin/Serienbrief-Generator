@@ -5,6 +5,7 @@ import { STANDARD_TEXTS, getStandardText } from "@/lib/templates/standardTexts";
 import type { StandardText, StandardTextVariant } from "@/lib/templates/standardTexts";
 import FileUploadButton from "./FileUploadButton";
 import RichTextEditor from "./RichTextEditor";
+import { setzeZeilenabstandInHtml } from "@/lib/tiptap/lineHeight";
 import type { StepProps } from "./wizardTypes";
 
 const MERGE_FIELDS = [
@@ -54,12 +55,17 @@ export default function StepText({ state, update }: StepProps) {
 
   function vorlageUebernehmen(id: StandardTextVariant) {
     const std = getStandardText(id);
+    // Variante C ist deutlich länger als A und B (Aufzählung + Beitragsgrafik).
+    // Damit sie auf eine Seite passt, kommt sie mit 10,5 pt und Zeilenabstand
+    // 1,15 statt mit den Vorgaben. Beides bleibt danach frei änderbar.
+    const istVarianteC = id.startsWith("c-");
     update({
-      bodyHtml: std.bodyHtml,
+      bodyHtml: istVarianteC ? setzeZeilenabstandInHtml(std.bodyHtml, "1.15") : std.bodyHtml,
       standardTextId: id,
       duSieMode: std.duSie,
       showHeadline: std.defaultHeadline !== "",
       headlineText: std.defaultHeadline,
+      ...(istVarianteC ? { fontSizePt: 10.5 } : {}),
     });
   }
 

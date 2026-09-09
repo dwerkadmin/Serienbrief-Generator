@@ -24,6 +24,26 @@ export const LINE_HEIGHTS: { value: string; label: string }[] = [
 
 const ERLAUBTE_WERTE = LINE_HEIGHTS.map((h) => h.value).filter((v) => v !== "");
 
+/**
+ * Setzt den Zeilenabstand auf alle Absätze eines HTML-Strings. Gebraucht, um
+ * eine Standardvorlage mit einem bestimmten Abstand zu laden (siehe
+ * vorlageUebernehmen in components/StepText.tsx) - der Wert steht danach als
+ * Inline-Style im Text, wird von parseHTML oben wieder eingelesen und erscheint
+ * daher korrekt im Regler der Symbolleiste.
+ */
+export function setzeZeilenabstandInHtml(html: string, wert: string): string {
+  return html.replace(/<p\b([^>]*)>/g, (_treffer, attribute: string) => {
+    const ohneAlten = attribute.replace(/\s*line-height\s*:[^;"']*;?/g, "");
+    const style = ohneAlten.match(/\sstyle\s*=\s*"([^"]*)"/);
+    if (style) {
+      const vorhandene = style[1].trim().replace(/;$/, "");
+      const neu = vorhandene === "" ? `line-height: ${wert}` : `${vorhandene}; line-height: ${wert}`;
+      return `<p${ohneAlten.replace(style[0], ` style="${neu}"`)}>`;
+    }
+    return `<p${ohneAlten} style="line-height: ${wert}">`;
+  });
+}
+
 export type LineHeightOptions = {
   /** Knotentypen, die das Attribut tragen dürfen */
   types: string[];
