@@ -89,10 +89,13 @@ export function buildBeitragsgrafikSvg(data: BeitragsgrafikData): string {
   if (ringTotal <= 0) return "";
   const gesamt = data.gesamtbeitrag > 0 ? data.gesamtbeitrag : entgeltumwandlung + agZuschuss;
 
-  const cx = 150;
-  const cy = 150;
-  const rOuter = 140;
-  const rInner = 78;
+  // Geometrie bewusst flach gehalten: das SVG steht mit width:100% in einem
+  // 165 mm breiten Textblock (210 mm minus 25/20 mm Rand), die gedruckte Höhe
+  // ist also immer Breite x viewBox-Verhältnis. Bei 900x220 sind das ~40 mm.
+  const cx = 112;
+  const cy = 110;
+  const rOuter = 104;
+  const rInner = 58;
 
   let angle = 0;
   const arcs = [
@@ -116,54 +119,60 @@ export function buildBeitragsgrafikSvg(data: BeitragsgrafikData): string {
     .filter((a) => a.endAngle - a.startAngle > 22) // zu schmale Segmente -> Wert nur in der Legende
     .map((a) => {
       const p = polarToCartesian(cx, cy, (rOuter + rInner) / 2, a.midAngle);
-      return `<text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" font-size="15" font-weight="700" fill="#ffffff">${escapeXml(formatEuro(a.value))}</text>`;
+      return `<text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="#ffffff">${escapeXml(formatEuro(a.value))}</text>`;
     })
     .join("");
 
-  const legendX = 340;
-  const valueX = 860;
+  // Der durch den kleineren Ring frei gewordene Platz geht an die Legende
+  // (legendX weiter links, valueX weiter rechts). So bleibt für die Beschriftung
+  // mehr Breite und die Schrift muss weniger stark schrumpfen.
+  const legendX = 250;
+  const valueX = 884;
   const rows: string[] = [];
-  let y = 46;
+  let y = 34;
 
   function legendRow(color: string | null, label: string, value: string, bold = false) {
-    if (color) rows.push(`<rect x="${legendX}" y="${y - 14}" width="18" height="18" rx="3" fill="${color}"/>`);
+    if (color) rows.push(`<rect x="${legendX}" y="${y - 12}" width="15" height="15" rx="2.5" fill="${color}"/>`);
     const weight = bold || color ? 700 : 400;
     rows.push(
-      `<text x="${legendX + (color ? 30 : 0)}" y="${y}" font-size="15" font-weight="${weight}" fill="${COLOR_TEXT}">${escapeXml(label)}</text>`
+      `<text x="${legendX + (color ? 25 : 0)}" y="${y}" font-size="13" font-weight="${weight}" fill="${COLOR_TEXT}">${escapeXml(label)}</text>`
     );
     rows.push(
-      `<text x="${valueX}" y="${y}" text-anchor="end" font-size="15" font-weight="700" fill="${color ?? COLOR_TEXT}">${escapeXml(value)}</text>`
+      `<text x="${valueX}" y="${y}" text-anchor="end" font-size="13" font-weight="700" fill="${color ?? COLOR_TEXT}">${escapeXml(value)}</text>`
     );
   }
 
   function divider() {
-    rows.push(`<line x1="${legendX}" y1="${y - 10}" x2="${valueX}" y2="${y - 10}" stroke="${COLOR_DIVIDER}" stroke-width="1.5"/>`);
+    rows.push(`<line x1="${legendX}" y1="${y - 9}" x2="${valueX}" y2="${y - 9}" stroke="${COLOR_DIVIDER}" stroke-width="1.3"/>`);
   }
 
   legendRow(COLOR_EIGENBEITRAG, "Ihr monatlicher Eigenbeitrag", formatEuro(eigenbeitrag));
-  y += 40;
+  y += 34;
   legendRow(COLOR_ERSPARNIS, "Steuer- und Sozialversicherungsersparnisse", formatEuro(ersparnis));
-  y += 34;
+  y += 29;
   divider();
-  y += 14;
+  y += 12;
   legendRow(null, "mtl. Entgeltumwandlung in €", formatEuro(entgeltumwandlung), true);
-  y += 40;
-  legendRow(COLOR_AGZUSCHUSS, "Ihr Arbeitgeber zahlt für Sie", formatEuro(agZuschuss));
   y += 34;
+  legendRow(COLOR_AGZUSCHUSS, "Ihr Arbeitgeber zahlt für Sie", formatEuro(agZuschuss));
+  y += 29;
   divider();
-  y += 22;
-  rows.push(`<text x="${legendX}" y="${y}" font-size="15" font-weight="700" fill="${COLOR_TEXT}">In Ihre betriebliche Altersvorsorge fließen</text>`);
-  y += 20;
-  rows.push(`<text x="${legendX}" y="${y}" font-size="15" font-weight="700" fill="${COLOR_TEXT}">monatlich insgesamt</text>`);
+  y += 19;
+  rows.push(`<text x="${legendX}" y="${y}" font-size="13" font-weight="700" fill="${COLOR_TEXT}">In Ihre betriebliche Altersvorsorge fließen</text>`);
+  y += 17;
+  rows.push(`<text x="${legendX}" y="${y}" font-size="13" font-weight="700" fill="${COLOR_TEXT}">monatlich insgesamt</text>`);
   rows.push(
-    `<text x="${valueX}" y="${y}" text-anchor="end" font-size="17" font-weight="700" fill="${COLOR_TEXT}">${escapeXml(formatEuro(gesamt))}</text>`
+    `<text x="${valueX}" y="${y}" text-anchor="end" font-size="15" font-weight="700" fill="${COLOR_TEXT}">${escapeXml(formatEuro(gesamt))}</text>`
   );
 
-  return `<svg viewBox="0 0 900 300" style="width:100%;height:auto;display:block;margin:3mm 0 4mm 0;" xmlns="http://www.w3.org/2000/svg">
+  // viewBox-Höhe 220 statt 300: bei 165 mm Textbreite sind das ~40 mm statt
+  // ~55 mm gedruckte Höhe. Ring (y 6..214) und Legende (Grundlinie bis 208)
+  // passen beide hinein.
+  return `<svg viewBox="0 0 900 220" style="width:100%;height:auto;display:block;margin:2mm 0 3mm 0;" xmlns="http://www.w3.org/2000/svg">
   ${ringPaths}
   ${ringLabels}
-  <text x="${cx}" y="${cy - 8}" text-anchor="middle" font-size="15" fill="${COLOR_MUTED}">Sparbetrag</text>
-  <text x="${cx}" y="${cy + 16}" text-anchor="middle" font-size="19" font-weight="700" fill="${COLOR_TEXT}">${escapeXml(formatEuro(gesamt))}</text>
+  <text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="12" fill="${COLOR_MUTED}">Sparbetrag</text>
+  <text x="${cx}" y="${cy + 13}" text-anchor="middle" font-size="15" font-weight="700" fill="${COLOR_TEXT}">${escapeXml(formatEuro(gesamt))}</text>
   ${rows.join("\n  ")}
 </svg>`;
 }
