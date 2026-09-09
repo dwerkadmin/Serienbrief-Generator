@@ -59,6 +59,9 @@ type ExportedConfig = {
   beratungQrAktiv?: boolean;
   beratungQrUrl?: string;
   beratungQrUeberschrift?: string;
+  beratungQrKontaktZeigen?: boolean;
+  beratungQrKontaktTelefon?: boolean;
+  beratungQrKontaktEmail?: boolean;
 
   mapping: WizardState["mapping"];
   anredezeileConfig: WizardState["anredezeileConfig"];
@@ -124,6 +127,9 @@ export async function buildConfigExport(state: WizardState): Promise<string> {
     beratungQrAktiv: state.beratungQrAktiv,
     beratungQrUrl: state.beratungQrUrl,
     beratungQrUeberschrift: state.beratungQrUeberschrift,
+    beratungQrKontaktZeigen: state.beratungQrKontaktZeigen,
+    beratungQrKontaktTelefon: state.beratungQrKontaktTelefon,
+    beratungQrKontaktEmail: state.beratungQrKontaktEmail,
 
     mapping: state.mapping,
     anredezeileConfig: state.anredezeileConfig,
@@ -189,6 +195,9 @@ export function parseConfigImport(jsonText: string): Partial<WizardState> {
     beratungQrAktiv: config.beratungQrAktiv ?? false,
     beratungQrUrl: config.beratungQrUrl ?? "",
     beratungQrUeberschrift: config.beratungQrUeberschrift ?? "",
+    beratungQrKontaktZeigen: config.beratungQrKontaktZeigen ?? true,
+    beratungQrKontaktTelefon: config.beratungQrKontaktTelefon ?? true,
+    beratungQrKontaktEmail: config.beratungQrKontaktEmail ?? true,
 
     mapping: config.mapping,
     anredezeileConfig: config.anredezeileConfig,

@@ -66,6 +66,9 @@ function buildFormData(state: WizardState): FormData {
   if (state.beratungQrAktiv) {
     fd.set("beratungQrUrl", state.beratungQrUrl);
     fd.set("beratungQrUeberschrift", state.beratungQrUeberschrift);
+    fd.set("beratungQrKontaktZeigen", String(state.beratungQrKontaktZeigen));
+    fd.set("beratungQrKontaktTelefon", String(state.beratungQrKontaktTelefon));
+    fd.set("beratungQrKontaktEmail", String(state.beratungQrKontaktEmail));
   }
 
   if (state.csvFile) fd.set("csvFile", state.csvFile);

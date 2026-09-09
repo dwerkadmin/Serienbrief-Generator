@@ -188,6 +188,59 @@ export default function StepPhoto({ state, update }: StepProps) {
               )}
             </div>
 
+            <div className="rounded-lg bg-slate-50 p-3">
+              <label className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={state.beratungQrKontaktZeigen}
+                  onChange={(e) => update({ beratungQrKontaktZeigen: e.target.checked })}
+                  className="h-4 w-4 accent-sky-600"
+                />
+                Kontaktzeile mit dem Ansprechpartner einblenden
+              </label>
+              {state.beratungQrKontaktZeigen ? (
+                <div className="mt-2 space-y-1.5 pl-6">
+                  <p className="text-xs text-slate-500">
+                    Der Name wird immer angezeigt. Zusätzlich:
+                  </p>
+                  <label className="flex items-center gap-2 text-xs text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={state.beratungQrKontaktTelefon}
+                      onChange={(e) => update({ beratungQrKontaktTelefon: e.target.checked })}
+                      className="h-4 w-4 accent-sky-600"
+                    />
+                    Telefonnummer
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={state.beratungQrKontaktEmail}
+                      onChange={(e) => update({ beratungQrKontaktEmail: e.target.checked })}
+                      className="h-4 w-4 accent-sky-600"
+                    />
+                    E-Mail-Adresse
+                  </label>
+                  <p className="pt-1 text-xs text-slate-500">
+                    Vorschau:{" "}
+                    <span className="font-medium text-slate-700">
+                      {[
+                        `${state.ansprechpartnerAnrede} ${state.ansprechpartnerName}`.trim(),
+                        state.beratungQrKontaktTelefon ? state.ansprechpartnerTelefon.trim() : "",
+                        state.beratungQrKontaktEmail ? state.ansprechpartnerEmail.trim() : "",
+                      ]
+                        .filter((t) => t !== "")
+                        .join(" · ") || "(Ansprechpartner in Schritt 2 noch nicht ausgefüllt)"}
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-1 pl-6 text-xs text-slate-500">
+                  Im Block steht dann nur die Überschrift, der Hinweistext und der QR-Code.
+                </p>
+              )}
+            </div>
+
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">
                 Überschrift (optional)

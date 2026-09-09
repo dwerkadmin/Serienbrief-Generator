@@ -67,6 +67,10 @@ export type WizardState = {
   beratungQrUrl: string;
   /** Leer = automatische, Du/Sie-abhängige Überschrift (siehe lib/beratungQr.ts) */
   beratungQrUeberschrift: string;
+  /** Kontaktzeile im Beratungsblock: ganz aus, oder Name plus optional Telefon/E-Mail */
+  beratungQrKontaktZeigen: boolean;
+  beratungQrKontaktTelefon: boolean;
+  beratungQrKontaktEmail: boolean;
 
   // Schritt 4: Adressliste
   csvFile: File | null;
@@ -113,6 +117,9 @@ export const initialWizardState: WizardState = {
   beratungQrAktiv: false,
   beratungQrUrl: "",
   beratungQrUeberschrift: "",
+  beratungQrKontaktZeigen: true,
+  beratungQrKontaktTelefon: true,
+  beratungQrKontaktEmail: true,
 
   csvFile: null,
   csvHeaders: [],

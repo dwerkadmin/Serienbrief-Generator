@@ -245,6 +245,11 @@ export async function POST(req: Request) {
   // Optionaler zweiter QR-Code am Fuß von Seite 2 (persönliche Beratung).
   const beratungQrAktiv = form.get("beratungQrAktiv") === "true";
   const beratungQrUeberschrift = String(form.get("beratungQrUeberschrift") ?? "");
+  // Kontaktzeile: Vorgabe "an", damit ältere Aufrufe ohne diese Felder sich
+  // weiter wie bisher verhalten.
+  const beratungQrKontaktZeigen = form.get("beratungQrKontaktZeigen") !== "false";
+  const beratungQrKontaktTelefon = form.get("beratungQrKontaktTelefon") !== "false";
+  const beratungQrKontaktEmail = form.get("beratungQrKontaktEmail") !== "false";
   let beratungQrDataUrl = "";
   if (beratungQrAktiv) {
     const eingabe = String(form.get("beratungQrUrl") ?? "");
@@ -285,6 +290,9 @@ export async function POST(req: Request) {
       qrCodeDataUrl,
       beratungQrDataUrl,
       beratungQrUeberschrift,
+      beratungQrKontaktZeigen,
+      beratungQrKontaktTelefon,
+      beratungQrKontaktEmail,
     },
     recipients,
     fontFaceCss

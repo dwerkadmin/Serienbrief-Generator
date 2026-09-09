@@ -44,6 +44,14 @@ export type LetterConfig = {
   beratungQrDataUrl: string;
   /** Überschrift über diesem Block; leer = Du/Sie-abhängiger Standard */
   beratungQrUeberschrift: string;
+  /**
+   * Kontaktzeile im Beratungsblock. Nicht jeder Berater will telefonisch oder
+   * per Mail erreichbar sein, daher jeweils abschaltbar. Der Name gehört
+   * immer dazu, wenn die Zeile überhaupt erscheint.
+   */
+  beratungQrKontaktZeigen: boolean;
+  beratungQrKontaktTelefon: boolean;
+  beratungQrKontaktEmail: boolean;
 };
 
 function escapeHtml(value: string): string {
@@ -285,14 +293,16 @@ function renderBeraterBlock(config: LetterConfig): string {
     config.beratungQrUeberschrift.trim() || beratungQrStandardUeberschrift(config.duSieMode);
   const text = beratungQrStandardText(config.duSieMode);
 
-  const kontakt = [
-    `${config.ansprechpartnerAnrede} ${config.ansprechpartnerName}`.trim(),
-    config.ansprechpartnerTelefon.trim(),
-    config.ansprechpartnerEmail.trim(),
-  ]
-    .filter((t) => t !== "")
-    .map(escapeHtml)
-    .join(" &middot; ");
+  const kontakt = config.beratungQrKontaktZeigen
+    ? [
+        `${config.ansprechpartnerAnrede} ${config.ansprechpartnerName}`.trim(),
+        config.beratungQrKontaktTelefon ? config.ansprechpartnerTelefon.trim() : "",
+        config.beratungQrKontaktEmail ? config.ansprechpartnerEmail.trim() : "",
+      ]
+        .filter((t) => t !== "")
+        .map(escapeHtml)
+        .join(" &middot; ")
+    : "";
 
   return `
     <div class="p2-berater" style="border-color:${color}">
