@@ -88,11 +88,13 @@ export function applyMergeFields(html: string, recipient: Recipient, campaign: M
     .replace(/\{\{\s*Beitragsgrafik\s*\}\}/g, beitragsgrafikSvg);
 }
 
-/** "AB12CD34" -> "AB12 CD34" - besser lesbar, ohne den eigentlichen Wert zu verändern. */
+/**
+ * Freischaltcode für die Anzeige auf Seite 2. Früher wurde bei 8 Zeichen ein
+ * Leerzeichen nach dem vierten eingefügt ("AB12CD34" -> "AB12 CD34"); das ist
+ * auf Wunsch entfallen, der Code steht jetzt unverändert da.
+ */
 function formatFreischaltcode(code: string): string {
-  const clean = code.trim();
-  if (clean.length === 8) return `${clean.slice(0, 4)} ${clean.slice(4)}`;
-  return clean;
+  return code.trim();
 }
 
 const GERMAN_MONTHS = [
