@@ -218,7 +218,7 @@ export default function StepAddresses({ state, update }: StepProps) {
               </label>
               <p className="mb-3 text-xs text-slate-500">
                 „Absender aus dCRYPT-CSV übernehmen“ ist in Schritt 1 aktiviert — bitte diese vier
-                Spalten zuordnen.
+                Spalten zuordnen. (Funktioniert nicht mit der CSV-Musterdatei)
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {EMPLOYER_FIELDS.map((field) => (
