@@ -93,7 +93,7 @@ export default function RichTextEditor({ value, onChange, minHeight = "220px", m
               if (wert === "") kette.unsetLineHeight().run();
               else kette.setLineHeight(wert).run();
             }}
-            className="rounded border border-slate-300 bg-white px-1.5 py-1 text-xs"
+            className="rounded border border-slate-300 px-1.5 py-1 text-xs"
           >
             {LINE_HEIGHTS.map((h) => (
               <option key={h.value} value={h.value}>

@@ -18,6 +18,57 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
+/* Eingabefelder: hellgrau hinterlegt, damit sie sich von der weißen Karte
+   abheben und als "hier wird etwas eingegeben" lesbar sind. Zentral hier statt
+   an jedem Feld einzeln - die Felder tragen in den Komponenten bewusst keine
+   eigene Hintergrundklasse.
+   Beim Fokus wird das Feld weiß und der Rahmen farbig: der aktive Platz hebt
+   sich dann gegen die ruhigen grauen Felder ab. */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+select,
+textarea {
+  background-color: #f1f5f9;
+  border-color: #dde3ea;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+input[type="text"]:hover:not(:focus),
+input[type="password"]:hover:not(:focus),
+input[type="email"]:hover:not(:focus),
+select:hover:not(:focus),
+textarea:hover:not(:focus) {
+  background-color: #e9eef4;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  background-color: #ffffff;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8;
+}
+
 /* Tiptap-Editor: einfache Standardformatierung für Überschriften/Absätze */
 .letter-editor {
   outline: none;
