@@ -8,9 +8,12 @@
  * A1-Nettoeigenanteil, A1-Steuerersparnis, A1-SVErsparnis, A1-AGZuschuss,
  * A1-Gesamtbeitrag (oder A2-/A3-Variante, je nach gewählter Beitragsstufe).
  *
- * Farben sind aus der vom Kunden gelieferten Referenzgrafik übernommen
- * (Grafik_Final_Netto_70_AG-Zuschuss 15prozent.png).
+ * Die drei Segmentfarben werden aus der CI-Farbe (Schritt 1) abgeleitet, siehe
+ * lib/farbpalette.ts. Der Aufbau folgt dabei der vom Kunden gelieferten
+ * Referenzgrafik (Grafik_Final_Netto_70_AG-Zuschuss 15prozent.png): helle
+ * Hauptfarbe, andersfarbiger Akzent, dunkle Variante.
  */
+import { beitragsfarbenAusCi } from "@/lib/farbpalette";
 
 export type BeitragsgrafikData = {
   eigenbeitrag: number;
@@ -20,9 +23,8 @@ export type BeitragsgrafikData = {
   gesamtbeitrag: number;
 };
 
-const COLOR_EIGENBEITRAG = "#5499DE"; // hellblau
-const COLOR_ERSPARNIS = "#39D44E"; // grün
-const COLOR_AGZUSCHUSS = "#20456C"; // dunkelblau/navy
+// Frueher waren die Segmentfarben hier fest verdrahtet:
+// #5499DE hellblau / #39D44E gruen / #20456C navy.
 const COLOR_TEXT = "#1A1A1A";
 const COLOR_MUTED = "#5A5A5A";
 const COLOR_DIVIDER = "#D8D8D8";
@@ -80,7 +82,8 @@ function donutSegmentPath(cx: number, cy: number, rOuter: number, rInner: number
  * (positiven) Beitragsdaten vorliegen - dann wird an der Platzhalter-Stelle
  * im Brieftext einfach nichts eingefügt, statt eine leere/kaputte Grafik.
  */
-export function buildBeitragsgrafikSvg(data: BeitragsgrafikData): string {
+export function buildBeitragsgrafikSvg(data: BeitragsgrafikData, ciFarbe: string): string {
+  const farben = beitragsfarbenAusCi(ciFarbe);
   const eigenbeitrag = Math.max(0, data.eigenbeitrag);
   const ersparnis = Math.max(0, data.steuerErsparnis) + Math.max(0, data.svErsparnis);
   const agZuschuss = Math.max(0, data.agZuschuss);
@@ -99,9 +102,9 @@ export function buildBeitragsgrafikSvg(data: BeitragsgrafikData): string {
 
   let angle = 0;
   const arcs = [
-    { value: eigenbeitrag, color: COLOR_EIGENBEITRAG },
-    { value: ersparnis, color: COLOR_ERSPARNIS },
-    { value: agZuschuss, color: COLOR_AGZUSCHUSS },
+    { value: eigenbeitrag, color: farben.eigenbeitrag },
+    { value: ersparnis, color: farben.ersparnis },
+    { value: agZuschuss, color: farben.agZuschuss },
   ]
     .filter((s) => s.value > 0)
     .map((s) => {
@@ -146,15 +149,15 @@ export function buildBeitragsgrafikSvg(data: BeitragsgrafikData): string {
     rows.push(`<line x1="${legendX}" y1="${y - 9}" x2="${valueX}" y2="${y - 9}" stroke="${COLOR_DIVIDER}" stroke-width="1.3"/>`);
   }
 
-  legendRow(COLOR_EIGENBEITRAG, "Ihr monatlicher Eigenbeitrag", formatEuro(eigenbeitrag));
+  legendRow(farben.eigenbeitrag, "Ihr monatlicher Eigenbeitrag", formatEuro(eigenbeitrag));
   y += 34;
-  legendRow(COLOR_ERSPARNIS, "Steuer- und Sozialversicherungsersparnisse", formatEuro(ersparnis));
+  legendRow(farben.ersparnis, "Steuer- und Sozialversicherungsersparnisse", formatEuro(ersparnis));
   y += 29;
   divider();
   y += 12;
   legendRow(null, "mtl. Entgeltumwandlung in €", formatEuro(entgeltumwandlung), true);
   y += 34;
-  legendRow(COLOR_AGZUSCHUSS, "Ihr Arbeitgeber zahlt für Sie", formatEuro(agZuschuss));
+  legendRow(farben.agZuschuss, "Ihr Arbeitgeber zahlt für Sie", formatEuro(agZuschuss));
   y += 29;
   divider();
   y += 19;

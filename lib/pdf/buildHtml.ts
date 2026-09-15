@@ -64,6 +64,8 @@ function escapeHtml(value: string): string {
 }
 
 export type MergeCampaignFields = {
+  /** CI-Farbe aus Schritt 1 - die Beitragsgrafik leitet ihre Segmentfarben daraus ab */
+  designColor: string;
   unternehmensname: string;
   ansprechpartnerAnrede: string;
   ansprechpartnerName: string;
@@ -81,7 +83,7 @@ export function applyMergeFields(html: string, recipient: Recipient, campaign: M
     svErsparnis: parseGermanDecimal(recipient.chartSvErsparnis),
     agZuschuss: parseGermanDecimal(recipient.chartAgZuschuss),
     gesamtbeitrag: parseGermanDecimal(recipient.chartGesamtbeitrag),
-  });
+  }, campaign.designColor);
 
   return html
     .replace(/\{\{\s*Vorname\s*\}\}/g, escapeHtml(recipient.vorname))
@@ -165,6 +167,7 @@ function renderPage1(config: LetterConfig, recipient: Recipient, dateText: strin
   // statt aus dem fest eingetragenen Feld (Schritt 1).
   const unternehmensnameText = config.absenderAusCsv ? recipient.arbeitgebername : config.unternehmensname;
   const body = applyMergeFields(config.bodyHtml, recipient, {
+    designColor: config.designColor,
     unternehmensname: unternehmensnameText,
     ansprechpartnerAnrede: config.ansprechpartnerAnrede,
     ansprechpartnerName: config.ansprechpartnerName,
