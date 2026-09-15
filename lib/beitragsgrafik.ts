@@ -134,11 +134,17 @@ export function buildBeitragsgrafikSvg(data: BeitragsgrafikData, ciFarbe: string
   const rows: string[] = [];
   let y = 34;
 
-  function legendRow(color: string | null, label: string, value: string, bold = false) {
+  function legendRow(color: string | null, label: string, value: string, bold = false, zusatz?: string) {
     if (color) rows.push(`<rect x="${legendX}" y="${y - 12}" width="15" height="15" rx="2.5" fill="${color}"/>`);
     const weight = bold || color ? 700 : 400;
+    // Der Zusatz läuft als tspan im selben <text> weiter, damit er ohne
+    // Breitenberechnung direkt hinter der Beschriftung sitzt. Abstand über dx,
+    // nicht über ein Leerzeichen - SVG schluckt führende Leerzeichen.
+    const zusatzMarkup = zusatz
+      ? `<tspan dx="5" font-size="10" font-weight="400" fill="${COLOR_MUTED}">${escapeXml(zusatz)}</tspan>`
+      : "";
     rows.push(
-      `<text x="${legendX + (color ? 25 : 0)}" y="${y}" font-size="13" font-weight="${weight}" fill="${COLOR_TEXT}">${escapeXml(label)}</text>`
+      `<text x="${legendX + (color ? 25 : 0)}" y="${y}" font-size="13" font-weight="${weight}" fill="${COLOR_TEXT}">${escapeXml(label)}${zusatzMarkup}</text>`
     );
     rows.push(
       `<text x="${valueX}" y="${y}" text-anchor="end" font-size="13" font-weight="700" fill="${color ?? COLOR_TEXT}">${escapeXml(value)}</text>`
@@ -149,7 +155,7 @@ export function buildBeitragsgrafikSvg(data: BeitragsgrafikData, ciFarbe: string
     rows.push(`<line x1="${legendX}" y1="${y - 9}" x2="${valueX}" y2="${y - 9}" stroke="${COLOR_DIVIDER}" stroke-width="1.3"/>`);
   }
 
-  legendRow(farben.eigenbeitrag, "Ihr monatlicher Eigenbeitrag", formatEuro(eigenbeitrag));
+  legendRow(farben.eigenbeitrag, "Ihr monatlicher Eigenbeitrag", formatEuro(eigenbeitrag), false, "(persönliches Beispiel)");
   y += 34;
   legendRow(farben.ersparnis, "Steuer- und Sozialversicherungsersparnisse", formatEuro(ersparnis));
   y += 29;
