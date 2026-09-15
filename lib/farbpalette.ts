@@ -126,7 +126,10 @@ export function beitragsfarbenAusCi(ciFarbe: string): Beitragsfarben {
   // Untergrenze für die Sättigung: sonst wären alle drei Segmente grau.
   const s = Math.max(0.42, Math.min(0.85, basis.s < 0.15 ? 0.6 : basis.s));
 
-  const eigenbeitrag = aufKontrastAbdunkeln(
+  // Der Arbeitgeberzuschuss trägt die CI-Farbe selbst, der Eigenbeitrag die
+  // dunkle Variante. Bewusst so herum: der Zuschuss ist die Botschaft des
+  // Briefes und bekommt damit den Auftritt der Hausfarbe.
+  const agZuschuss = aufKontrastAbdunkeln(
     { h, s, l: Math.min(0.58, Math.max(0.42, basis.l + 0.06)) },
     MINDESTKONTRAST
   );
@@ -137,13 +140,13 @@ export function beitragsfarbenAusCi(ciFarbe: string): Beitragsfarben {
   );
 
   // Dunkle Variante derselben Farbe. Sie teilt sich den Farbwinkel mit dem
-  // Hauptsegment, muss sich also über die Helligkeit absetzen - deshalb hier
-  // ein garantierter Abstand statt eines festen Werts: hat das Hauptsegment
-  // zum Erreichen des Kontrasts selbst abgedunkelt werden müssen, rutscht das
-  // dunkle Segment entsprechend mit.
-  const hellEigen = hexZuHsl(eigenbeitrag).l;
-  const agZuschuss = aufKontrastAbdunkeln(
-    { h, s: Math.min(0.8, s + 0.1), l: Math.max(0.12, Math.min(0.24, hellEigen - 0.22)) },
+  // Zuschuss-Segment, muss sich also über die Helligkeit absetzen - deshalb
+  // hier ein garantierter Abstand statt eines festen Werts: musste die helle
+  // Farbe zum Erreichen des Kontrasts selbst abgedunkelt werden, rutscht die
+  // dunkle entsprechend mit.
+  const hellAg = hexZuHsl(agZuschuss).l;
+  const eigenbeitrag = aufKontrastAbdunkeln(
+    { h, s: Math.min(0.8, s + 0.1), l: Math.max(0.12, Math.min(0.24, hellAg - 0.22)) },
     MINDESTKONTRAST
   );
 
