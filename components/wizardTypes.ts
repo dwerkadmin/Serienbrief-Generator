@@ -4,6 +4,7 @@ import { getStandardText } from "@/lib/templates/standardTexts";
 import type { StandardTextVariant } from "@/lib/templates/standardTexts";
 import type { DuSieMode } from "@/lib/pdf/buildHtml";
 import { DEFAULT_BERATUNGSLINK_DOMAIN } from "@/lib/beratungslink";
+import type { PlatzhalterStil } from "@/lib/email/platzhalter";
 
 export type LogoPosition = "left" | "center" | "right";
 
@@ -72,6 +73,16 @@ export type WizardState = {
   beratungQrKontaktTelefon: boolean;
   beratungQrKontaktEmail: boolean;
 
+  // Schritt 5: E-Mail-Vorlage
+  /** Öffentlich erreichbare Bild-Adresse des Logos; leer = kein Logo in der Mail */
+  emailLogoUrl: string;
+  /** Öffentlich erreichbare Bild-Adresse des Kopfbilds; leer = kein Kopfbild */
+  emailHeaderBildUrl: string;
+  /** Schreibweise der Platzhalter in der ausgegebenen Vorlage */
+  emailPlatzhalterStil: PlatzhalterStil;
+  /** CSV-Spalte mit der E-Mail-Adresse - nur für den Export der Kontaktliste */
+  emailSpalte: string;
+
   // Schritt 4: Adressliste
   csvFile: File | null;
   csvHeaders: string[];
@@ -120,6 +131,11 @@ export const initialWizardState: WizardState = {
   beratungQrKontaktZeigen: true,
   beratungQrKontaktTelefon: true,
   beratungQrKontaktEmail: true,
+
+  emailLogoUrl: "",
+  emailHeaderBildUrl: "",
+  emailPlatzhalterStil: "brevo",
+  emailSpalte: "",
 
   csvFile: null,
   csvHeaders: [],

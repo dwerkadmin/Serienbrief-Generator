@@ -238,7 +238,8 @@ export default function FunktionenBereich() {
           </h2>
           <p className="mb-4 text-slate-600">
             Vier Schritte, in beliebiger Reihenfolge anspringbar. Am Ende ein Klick auf
-            „Serienbriefe erstellen“ — die fertige PDF landet im Download-Ordner.
+            „Serienbriefe erstellen“ — die fertige PDF landet im Download-Ordner. Schritt 5 ist
+            optional und erzeugt aus denselben Angaben eine E-Mail statt eines Briefs.
           </p>
 
           <div className="space-y-5">
@@ -336,6 +337,37 @@ export default function FunktionenBereich() {
                 Schritten, der Freischaltcode — und optional der Beratungsblock am Fuß.
               </p>
             </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-1 border-b border-slate-200 pb-1.5 text-base font-semibold text-slate-900">
+            Dieselbe Kampagne als E-Mail
+          </h2>
+          <p className="mb-3 text-slate-600">
+            Schritt 5 baut aus denselben Angaben eine fertige HTML-Mail. Der Anschriftenblock
+            entfällt, und aus den QR-Codes werden Schaltflächen zum Anklicken — wer die Mail liest,
+            hat das Gerät ohnehin in der Hand. Die Beitragsgrafik wird zur Tabelle, weil
+            E-Mail-Programme Vektorgrafiken nicht anzeigen.
+          </p>
+          <ul className="list-disc space-y-1 pl-5 text-slate-600 marker:text-sky-600">
+            <li>
+              Vorschau mit den Daten des ersten Empfängers, Download als HTML-Datei oder direkt in
+              die Zwischenablage.
+            </li>
+            <li>
+              Platzhalter wahlweise in der Schreibweise des Generators oder als Brevo-Attribute —
+              dann lässt sich die Vorlage dort einfügen und als Serienmail versenden.
+            </li>
+            <li>
+              Passend dazu eine Kontaktliste als CSV, mit genau den Attributspalten, die die
+              Vorlage verwendet.
+            </li>
+          </ul>
+          <div className="mt-3 rounded-lg border-l-4 border-sky-600 bg-sky-50 px-4 py-3">
+            <b>Bilder brauchen eine Adresse im Internet.</b> Logo und Kopfbild werden als URL
+            angegeben, nicht hochgeladen: eingebettete Bilder zeigen die meisten E-Mail-Programme
+            nicht an. Ohne Adresse entfällt das Bild, die Mail bleibt vollständig.
           </div>
         </section>
 

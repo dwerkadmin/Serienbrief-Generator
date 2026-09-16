@@ -63,6 +63,12 @@ type ExportedConfig = {
   beratungQrKontaktTelefon?: boolean;
   beratungQrKontaktEmail?: boolean;
 
+  /** E-Mail-Vorlage - erst ab dieser Fassung vorhanden. */
+  emailLogoUrl?: string;
+  emailHeaderBildUrl?: string;
+  emailPlatzhalterStil?: WizardState["emailPlatzhalterStil"];
+  emailSpalte?: string;
+
   mapping: WizardState["mapping"];
   anredezeileConfig: WizardState["anredezeileConfig"];
 };
@@ -131,6 +137,11 @@ export async function buildConfigExport(state: WizardState): Promise<string> {
     beratungQrKontaktTelefon: state.beratungQrKontaktTelefon,
     beratungQrKontaktEmail: state.beratungQrKontaktEmail,
 
+    emailLogoUrl: state.emailLogoUrl,
+    emailHeaderBildUrl: state.emailHeaderBildUrl,
+    emailPlatzhalterStil: state.emailPlatzhalterStil,
+    emailSpalte: state.emailSpalte,
+
     mapping: state.mapping,
     anredezeileConfig: state.anredezeileConfig,
   };
@@ -198,6 +209,11 @@ export function parseConfigImport(jsonText: string): Partial<WizardState> {
     beratungQrKontaktZeigen: config.beratungQrKontaktZeigen ?? true,
     beratungQrKontaktTelefon: config.beratungQrKontaktTelefon ?? true,
     beratungQrKontaktEmail: config.beratungQrKontaktEmail ?? true,
+
+    emailLogoUrl: config.emailLogoUrl ?? "",
+    emailHeaderBildUrl: config.emailHeaderBildUrl ?? "",
+    emailPlatzhalterStil: config.emailPlatzhalterStil ?? "brevo",
+    emailSpalte: config.emailSpalte ?? "",
 
     mapping: config.mapping,
     anredezeileConfig: config.anredezeileConfig,

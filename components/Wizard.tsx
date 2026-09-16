@@ -6,6 +6,7 @@ import StepLetterhead from "./StepLetterhead";
 import StepText from "./StepText";
 import StepPhoto from "./StepPhoto";
 import StepAddresses from "./StepAddresses";
+import StepEmail from "./StepEmail";
 import FileUploadButton from "./FileUploadButton";
 import FunktionenBereich from "./FunktionenBereich";
 import InfoBereich from "./InfoBereich";
@@ -21,7 +22,11 @@ const STEPS = [
   { id: 2, label: "Anschreiben" },
   { id: 3, label: "Seite 2" },
   { id: 4, label: "Adressliste" },
+  { id: 5, label: "E-Mail" },
 ] as const;
+
+/** Letzter Schritt des PDF-Ablaufs. Schritt 5 haengt daran und erzeugt keine PDF. */
+const PDF_SCHRITTE = 4;
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
@@ -269,7 +274,7 @@ export default function Wizard() {
         <p className="mb-4 text-sm text-slate-600">{configMessage}</p>
       )}
 
-      <div className="mb-6 flex gap-2">
+      <div className="mb-6 flex flex-wrap gap-2">
         {STEPS.map((s) => (
           <button
             key={s.id}
@@ -291,6 +296,7 @@ export default function Wizard() {
         {step === 2 && <StepText state={state} update={update} />}
         {step === 3 && <StepPhoto state={state} update={update} />}
         {step === 4 && <StepAddresses state={state} update={update} />}
+        {step === 5 && <StepEmail state={state} update={update} />}
       </div>
 
       {error && (
@@ -315,24 +321,39 @@ export default function Wizard() {
           Zurück
         </button>
 
-        {step < STEPS.length ? (
-          <button
-            type="button"
-            onClick={() => setStep((s) => Math.min(STEPS.length, s + 1))}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
-          >
-            Weiter
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
-          >
-            {submitting ? "Erstelle PDF…" : "Serienbriefe erstellen"}
-          </button>
-        )}
+        {/* Schritt 4 ist der Abschluss des Serienbrief-Ablaufs - die PDF wird dort
+            erzeugt. Schritt 5 (E-Mail-Vorlage) ist ein eigenstaendiges Ergebnis
+            aus denselben Angaben und hat seine Knoepfe im Schritt selbst. */}
+        <div className="flex items-center gap-2">
+          {step < PDF_SCHRITTE && (
+            <button
+              type="button"
+              onClick={() => setStep((s) => Math.min(STEPS.length, s + 1))}
+              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
+            >
+              Weiter
+            </button>
+          )}
+          {step === PDF_SCHRITTE && (
+            <>
+              <button
+                type="button"
+                onClick={() => setStep(PDF_SCHRITTE + 1)}
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+              >
+                Weiter zur E-Mail-Vorlage
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+              >
+                {submitting ? "Erstelle PDF…" : "Serienbriefe erstellen"}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <FunktionenBereich />
