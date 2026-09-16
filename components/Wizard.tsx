@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import StepLetterhead from "./StepLetterhead";
 import StepText from "./StepText";
 import StepPhoto from "./StepPhoto";
@@ -88,6 +89,15 @@ export default function Wizard() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<number | null>(null);
   const [configMessage, setConfigMessage] = useState<string | null>(null);
+  // Zielknoten in der Kopfleiste (siehe AppHeader). Er steht schon im vom Server
+  // gelieferten HTML, existiert beim Rendern auf dem Server aber nicht - daher
+  // über useSyncExternalStore mit null als Server-Wert. Kein Effekt nötig, und
+  // getElementById liefert stets denselben Knoten, ist also stabil.
+  const kopfSlot = useSyncExternalStore(
+    () => () => {},
+    () => document.getElementById("kopf-aktionen"),
+    () => null
+  );
 
   function update(patch: Partial<WizardState>) {
     setState((s) => ({ ...s, ...patch }));
@@ -229,21 +239,32 @@ export default function Wizard() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
-      <h1 className="mb-3 text-2xl font-semibold">Serienbrief-Generator für Mitarbeiteranschreiben</h1>
+      {/* Die Konfigurations-Knöpfe sitzen in der Kopfleiste neben dem Logo - die
+          war ohnehin fast leer, und im Wizard wird dadurch eine ganze Zeile
+          samt Hinweistext frei. Was die Konfiguration enthält, steht jetzt im
+          Bereich "Was kann der Generator?" am Fuß der Seite. */}
+      {kopfSlot &&
+        createPortal(
+          <>
+            <button
+              type="button"
+              onClick={handleExportConfig}
+              title="Briefbogen, Texte, Design und Ansprechpartner als Datei sichern - ohne Adressliste"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+            >
+              Konfiguration speichern
+            </button>
+            <FileUploadButton
+              accept=".json,application/json"
+              onChange={handleImportConfig}
+              label="Konfiguration laden"
+            />
+          </>,
+          kopfSlot
+        )}
 
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={handleExportConfig}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
-        >
-          Konfiguration speichern
-        </button>
-        <FileUploadButton accept=".json,application/json" onChange={handleImportConfig} label="Konfiguration laden" />
-        <span className="text-xs text-slate-400">
-          Sichert/lädt Briefbogen, Texte, Design und Ansprechpartner als Datei - ohne Adressliste.
-        </span>
-      </div>
+      <h1 className="mb-6 text-2xl font-semibold">Serienbrief-Generator für Mitarbeiteranschreiben</h1>
+
       {configMessage && (
         <p className="mb-4 text-sm text-slate-600">{configMessage}</p>
       )}
