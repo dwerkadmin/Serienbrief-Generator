@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { buildAbsenderzeile } from "@/lib/absenderzeile";
 import { buildBeratungslinkUrl } from "@/lib/beratungslink";
 import { normalisiereBeratungQrUrl } from "@/lib/beratungQr";
@@ -40,8 +40,46 @@ function downloadText(text: string, dateiname: string, typ: string) {
   URL.revokeObjectURL(url);
 }
 
+type BrevoAbsender = { name: string; email: string };
+type BrevoErgebnis = {
+  listId: number;
+  campaignId: number;
+  empfaenger: number;
+  ohneAdresse: number;
+  angelegteAttribute: string[];
+  importStand: string;
+  testmail: string;
+};
+
 export default function StepEmail({ state, update }: StepProps) {
   const [hinweis, setHinweis] = useState<string | null>(null);
+
+  // Brevo-Anbindung: ob der Server einen Schlüssel hat und welche Absender dort
+  // verifiziert sind. Ohne Schlüssel bleibt der ganze Block ausgeblendet.
+  const [brevoKonfiguriert, setBrevoKonfiguriert] = useState<boolean | null>(null);
+  const [brevoAbsender, setBrevoAbsender] = useState<BrevoAbsender[]>([]);
+  const [brevoLaeuft, setBrevoLaeuft] = useState(false);
+  const [brevoFehler, setBrevoFehler] = useState<string | null>(null);
+  const [brevoErgebnis, setBrevoErgebnis] = useState<BrevoErgebnis | null>(null);
+  const [kampagnenNameEingabe, setKampagnenNameEingabe] = useState<string | null>(null);
+
+  useEffect(() => {
+    let abgebrochen = false;
+    fetch("/api/brevo/absender")
+      .then((r) => r.json())
+      .then((d: { konfiguriert?: boolean; absender?: BrevoAbsender[]; error?: string }) => {
+        if (abgebrochen) return;
+        setBrevoKonfiguriert(d.konfiguriert === true);
+        setBrevoAbsender(d.absender ?? []);
+        if (d.error) setBrevoFehler(d.error);
+      })
+      .catch(() => {
+        if (!abgebrochen) setBrevoKonfiguriert(false);
+      });
+    return () => {
+      abgebrochen = true;
+    };
+  }, []);
 
   const emailSpalte = state.emailSpalte || rateEmailSpalte(state.csvHeaders);
 
@@ -172,6 +210,70 @@ export default function StepEmail({ state, update }: StepProps) {
       setHinweis(`${was} in die Zwischenablage kopiert.`);
     } catch {
       setHinweis(`${was} konnte nicht kopiert werden - bitte die Datei herunterladen.`);
+    }
+  }
+
+  const datumStempel = new Date().toISOString().slice(0, 10);
+  const firmaKurz = state.absenderUnternehmensname.trim() || "Kampagne";
+  const kampagnenName = kampagnenNameEingabe ?? `${firmaKurz} – bAV – ${datumStempel}`;
+  const listenName = `${kampagnenName} – Empfänger`;
+
+  /**
+   * Übergibt Kontaktliste und Vorlage an Brevo. Die Vorlage geht dabei immer in
+   * der Brevo-Schreibweise hinüber, unabhängig von der Auswahl oben - mit
+   * {{Vorname}} käme bei jedem Empfänger der Platzhalter selbst an.
+   */
+  async function anBrevoUebergeben() {
+    setBrevoFehler(null);
+    setBrevoErgebnis(null);
+
+    if (state.csvRows.length === 0) {
+      setBrevoFehler("Bitte zuerst in Schritt 4 eine Adressliste hochladen.");
+      return;
+    }
+    if (emailSpalte === "") {
+      setBrevoFehler("Bitte unten die Spalte mit der E-Mail-Adresse zuordnen.");
+      return;
+    }
+    if (state.emailBrevoAbsender === "") {
+      setBrevoFehler("Bitte eine Absenderadresse wählen.");
+      return;
+    }
+
+    let csv: string;
+    try {
+      const empfaenger = applyMapping(state.csvRows, state.mapping, state.anredezeileConfig);
+      // Das BOM ist nur für Excel gedacht; im fileBody würde es an der ersten
+      // Spaltenüberschrift kleben und Brevo fände die Spalte EMAIL nicht.
+      csv = buildBrevoKontaktCsv(empfaenger, emailSpalte).replace(/^﻿/, "");
+    } catch (e) {
+      setBrevoFehler(e instanceof Error ? e.message : "Die Adressliste konnte nicht gelesen werden.");
+      return;
+    }
+
+    const fd = new FormData();
+    fd.set("listenName", listenName);
+    fd.set("kampagnenName", kampagnenName);
+    fd.set("betreff", betreff);
+    fd.set("absenderEmail", state.emailBrevoAbsender);
+    fd.set("testEmail", state.emailBrevoTestmail);
+    fd.set("vorschautext", betreff);
+    fd.set("html", buildEmailHtml({ ...basis, platzhalterStil: "brevo" }));
+    fd.set("kontakteCsv", csv);
+
+    setBrevoLaeuft(true);
+    try {
+      const res = await fetch("/api/brevo/kampagne", { method: "POST", body: fd });
+      const daten = await res.json();
+      if (!res.ok) {
+        setBrevoFehler(daten?.error ?? "Die Übergabe an Brevo ist fehlgeschlagen.");
+        return;
+      }
+      setBrevoErgebnis(daten as BrevoErgebnis);
+    } catch {
+      setBrevoFehler("Brevo war nicht erreichbar. Bitte erneut versuchen.");
+    } finally {
+      setBrevoLaeuft(false);
     }
   }
 
@@ -439,6 +541,124 @@ export default function StepEmail({ state, update }: StepProps) {
               </option>
             ))}
           </select>
+        </div>
+      )}
+
+      {brevoKonfiguriert && (
+        <div className="rounded-xl border-2 border-sky-200 bg-sky-50/40 p-4">
+          <div className="mb-1 text-sm font-semibold text-slate-900">Direkt an Brevo übergeben</div>
+          <p className="mb-4 text-xs text-slate-600">
+            Legt in Brevo eine Kontaktliste an, importiert die Empfänger und erzeugt die Kampagne
+            als <b>Entwurf</b>. Verschickt wird nichts — das löst ihr in Brevo aus, mit Vorschau und
+            Empfängerzahl davor. Auf Wunsch geht vorher eine Testmail raus.
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-sm font-medium">Name der Kampagne</label>
+              <input
+                type="text"
+                value={kampagnenName}
+                onChange={(e) => setKampagnenNameEingabe(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Die Kontaktliste heißt „{listenName}“.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium">Absender</label>
+              <select
+                value={state.emailBrevoAbsender}
+                onChange={(e) => update({ emailBrevoAbsender: e.target.value })}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+              >
+                <option value="">— wählen —</option>
+                {brevoAbsender.map((a) => (
+                  <option key={a.email} value={a.email}>
+                    {a.name} ({a.email})
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-slate-500">
+                {brevoAbsender.length === 0
+                  ? "In Brevo ist kein verifizierter Absender hinterlegt. Bitte dort unter „Absender“ eintragen und bestätigen."
+                  : "Nur in Brevo verifizierte Adressen — andere lehnt Brevo beim Versand ab."}
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium">Testmail an (optional)</label>
+              <input
+                type="email"
+                value={state.emailBrevoTestmail}
+                onChange={(e) => update({ emailBrevoTestmail: e.target.value })}
+                placeholder={state.ansprechpartnerEmail || "test@beispiel.de"}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Geht an genau diese Adresse, mit den Daten des ersten Empfängers.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={anBrevoUebergeben}
+            disabled={brevoLaeuft}
+            className="mt-4 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+          >
+            {brevoLaeuft ? "Übergebe an Brevo…" : "In Brevo anlegen"}
+          </button>
+
+          {brevoFehler && (
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {brevoFehler}
+            </p>
+          )}
+
+          {brevoErgebnis && (
+            <div className="mt-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              <p className="font-medium">
+                Kampagne „{kampagnenName}“ liegt als Entwurf in Brevo (Nr. {brevoErgebnis.campaignId}).
+              </p>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">
+                <li>
+                  {brevoErgebnis.empfaenger} Empfänger in die Liste importiert
+                  {brevoErgebnis.ohneAdresse > 0
+                    ? ` — davon ${brevoErgebnis.ohneAdresse} ohne E-Mail-Adresse, die fehlen in Brevo.`
+                    : "."}
+                  {brevoErgebnis.importStand !== "completed" &&
+                    " Der Import läuft bei Brevo noch — die Liste füllt sich in den nächsten Minuten."}
+                </li>
+                {brevoErgebnis.angelegteAttribute.length > 0 && (
+                  <li>
+                    Fehlende Kontakt-Attribute angelegt: {brevoErgebnis.angelegteAttribute.join(", ")}.
+                  </li>
+                )}
+                <li>
+                  {brevoErgebnis.testmail === "gesendet"
+                    ? `Testmail an ${state.emailBrevoTestmail} verschickt.`
+                    : brevoErgebnis.testmail === "uebersprungen"
+                      ? "Keine Testmail angefordert."
+                      : `Testmail fehlgeschlagen: ${brevoErgebnis.testmail}`}
+                </li>
+              </ul>
+              <p className="mt-2 text-xs">
+                Weiter geht es in{" "}
+                <a
+                  href="https://app.brevo.com/marketing/campaigns"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline"
+                >
+                  Brevo unter „Kampagnen“
+                </a>{" "}
+                — dort prüfen und versenden.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

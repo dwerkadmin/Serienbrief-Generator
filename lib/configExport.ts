@@ -72,6 +72,8 @@ type ExportedConfig = {
   emailFusstext?: string | null;
   emailImpressumUrl?: string;
   emailDatenschutzUrl?: string;
+  emailBrevoAbsender?: string;
+  emailBrevoTestmail?: string;
 
   mapping: WizardState["mapping"];
   anredezeileConfig: WizardState["anredezeileConfig"];
@@ -149,6 +151,8 @@ export async function buildConfigExport(state: WizardState): Promise<string> {
     emailFusstext: state.emailFusstext,
     emailImpressumUrl: state.emailImpressumUrl,
     emailDatenschutzUrl: state.emailDatenschutzUrl,
+    emailBrevoAbsender: state.emailBrevoAbsender,
+    emailBrevoTestmail: state.emailBrevoTestmail,
 
     mapping: state.mapping,
     anredezeileConfig: state.anredezeileConfig,
@@ -226,6 +230,8 @@ export function parseConfigImport(jsonText: string): Partial<WizardState> {
     emailFusstext: config.emailFusstext ?? null,
     emailImpressumUrl: config.emailImpressumUrl ?? "",
     emailDatenschutzUrl: config.emailDatenschutzUrl ?? "",
+    emailBrevoAbsender: config.emailBrevoAbsender ?? "",
+    emailBrevoTestmail: config.emailBrevoTestmail ?? "",
 
     mapping: config.mapping,
     anredezeileConfig: config.anredezeileConfig,

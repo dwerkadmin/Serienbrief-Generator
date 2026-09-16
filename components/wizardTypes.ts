@@ -93,6 +93,9 @@ export type WizardState = {
   emailFusstext: string | null;
   emailImpressumUrl: string;
   emailDatenschutzUrl: string;
+  /** Uebergabe an Brevo: verifizierte Absenderadresse und Ziel der Testmail */
+  emailBrevoAbsender: string;
+  emailBrevoTestmail: string;
 
   // Schritt 4: Adressliste
   csvFile: File | null;
@@ -151,6 +154,8 @@ export const initialWizardState: WizardState = {
   emailFusstext: null,
   emailImpressumUrl: "",
   emailDatenschutzUrl: "",
+  emailBrevoAbsender: "",
+  emailBrevoTestmail: "",
 
   csvFile: null,
   csvHeaders: [],
