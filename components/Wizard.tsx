@@ -6,6 +6,7 @@ import StepText from "./StepText";
 import StepPhoto from "./StepPhoto";
 import StepAddresses from "./StepAddresses";
 import FileUploadButton from "./FileUploadButton";
+import FunktionenBereich from "./FunktionenBereich";
 import InfoBereich from "./InfoBereich";
 import Impressum from "./Impressum";
 import { applyMapping } from "@/lib/csv/parseAddresses";
@@ -313,6 +314,7 @@ export default function Wizard() {
         )}
       </div>
 
+      <FunktionenBereich />
       <InfoBereich />
       <Impressum />
     </div>
