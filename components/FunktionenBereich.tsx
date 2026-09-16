@@ -370,6 +370,10 @@ export default function FunktionenBereich() {
               Passend dazu eine Kontaktliste als CSV, mit genau den Attributspalten, die die
               Vorlage verwendet.
             </li>
+            <li>
+              Im Fuß ein frei bearbeitbarer Absenderblock — vorbelegt mit Absenderzeile und
+              Kontaktdaten — sowie je ein Link zu Impressum und Datenschutz.
+            </li>
           </ul>
           <div className="mt-3 rounded-lg border-l-4 border-sky-600 bg-sky-50 px-4 py-3">
             <b>Bilder brauchen eine Adresse im Internet.</b> Ein Standardmotiv aus Schritt 3 wird

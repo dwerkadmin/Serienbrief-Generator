@@ -84,6 +84,15 @@ export type WizardState = {
   emailSpalte: string;
   /** Betreffzeile der Mail; leer = Standardvorschlag (siehe betreffVorschlag) */
   emailBetreff: string;
+  /**
+   * Fußzeile der Mail: Absender mit Kontaktdaten, frei bearbeitbar.
+   * null = noch nicht angefasst, dann folgt das Feld weiter der Absenderzeile
+   * aus Schritt 1 bzw. der CSV. Sobald einmal getippt wurde, gilt der Text -
+   * auch ein absichtlich leerer.
+   */
+  emailFusstext: string | null;
+  emailImpressumUrl: string;
+  emailDatenschutzUrl: string;
 
   // Schritt 4: Adressliste
   csvFile: File | null;
@@ -139,6 +148,9 @@ export const initialWizardState: WizardState = {
   emailPlatzhalterStil: "brevo",
   emailSpalte: "",
   emailBetreff: "",
+  emailFusstext: null,
+  emailImpressumUrl: "",
+  emailDatenschutzUrl: "",
 
   csvFile: null,
   csvHeaders: [],

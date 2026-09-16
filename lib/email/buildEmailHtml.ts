@@ -41,9 +41,15 @@ export type EmailConfig = {
   bodyHtml: string;
 
   unternehmensname: string;
-  absenderStrasse: string;
-  absenderPlz: string;
-  absenderOrt: string;
+
+  /**
+   * Fußzeile: Absender mit Kontaktdaten, frei eingegeben. Zeilenumbrüche
+   * werden übernommen, E-Mail-Adressen darin verlinkt.
+   */
+  fusstext: string;
+  /** Pflichtlinks unter dem Fußtext; leer = der jeweilige Link entfällt. */
+  impressumUrl: string;
+  datenschutzUrl: string;
 
   ansprechpartnerAnrede: string;
   ansprechpartnerName: string;
@@ -314,35 +320,54 @@ function beratungsblock(config: EmailConfig): string {
 </td></tr>`;
 }
 
-function fussbereich(config: EmailConfig): string {
-  const firma = config.unternehmensname.trim();
-  const anschrift = [
-    config.absenderStrasse.trim(),
-    `${config.absenderPlz.trim()} ${config.absenderOrt.trim()}`.trim(),
-  ]
-    .filter((t) => t !== "")
-    .map(escapeHtml)
-    .join("<br />");
-  const mail = config.ansprechpartnerEmail.trim();
-  const tel = config.ansprechpartnerTelefon.trim();
+/**
+ * Macht E-Mail-Adressen im Fußtext anklickbar. Telefonnummern bleiben Text:
+ * ihre Schreibweisen sind zu vielfältig, um sie verlässlich zu erkennen, und
+ * ein falsch zerlegter Anruf-Link wäre schlimmer als gar keiner.
+ * Läuft auf bereits escapetem Text - deshalb kein erneutes Escapen.
+ */
+function mailadressenVerlinken(escapterText: string): string {
+  return escapterText.replace(
+    /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g,
+    (adresse) => `<a href="mailto:${adresse}" style="color:${MUTED};text-decoration:underline;">${adresse}</a>`
+  );
+}
 
-  const kontaktZeile = [
-    tel
-      ? `<a href="tel:${escapeHtml(tel.replace(/[^\d+]/g, ""))}" style="color:${MUTED};text-decoration:none;">${escapeHtml(tel)}</a>`
-      : "",
-    mail ? `<a href="mailto:${escapeHtml(mail)}" style="color:${MUTED};text-decoration:none;">${escapeHtml(mail)}</a>` : "",
+/**
+ * Fuß der Mail: frei eingegebene Absenderangaben plus die beiden Pflichtlinks.
+ *
+ * Bewusst Freitext statt aus den Einzelfeldern zusammengebaut: was hier stehen
+ * muss, hängt an der Rechtsform des Absenders (Registergericht, Geschäftsführer,
+ * USt-IdNr.) und ist von Kunde zu Kunde verschieden. Vorbelegt wird er in der
+ * Maske mit der Absenderzeile, von da an gehört er dem Nutzer.
+ */
+function fussbereich(config: EmailConfig): string {
+  const zeilen = config.fusstext
+    .split("\n")
+    .map((z) => z.trim())
+    .filter((z) => z !== "")
+    .map((z) => mailadressenVerlinken(escapeHtml(z)))
+    .join("<br />");
+
+  const rechtslinks = [
+    { url: config.impressumUrl, text: "Impressum" },
+    { url: config.datenschutzUrl, text: "Datenschutz" },
   ]
+    .map(({ url, text }) => {
+      const ziel = sichereUrl(url);
+      return ziel === ""
+        ? ""
+        : `<a href="${ziel}" target="_blank" rel="noopener" style="color:${MUTED};text-decoration:underline;">${text}</a>`;
+    })
     .filter((t) => t !== "")
     .join(" &middot; ");
 
-  // Sind alle Absenderangaben leer, bliebe nur ein leerer Kasten mit Trennlinie
-  // unter der Mail stehen.
-  if (firma === "" && anschrift === "" && kontaktZeile === "") return "";
+  // Ohne Inhalt bliebe nur eine Trennlinie mit Leerraum unter der Mail stehen.
+  if (zeilen === "" && rechtslinks === "") return "";
 
-  return `<tr><td class="rand" style="padding:30px 40px 34px 40px;border-top:1px solid ${LINIE};font-family:${SCHRIFT};font-size:12px;line-height:1.7;color:${MUTED};">
-  ${firma ? `<strong style="color:${TEXT};">${escapeHtml(firma)}</strong><br />` : ""}
-  ${anschrift}
-  ${kontaktZeile ? `<br />${kontaktZeile}` : ""}
+  return `<tr><td class="rand" style="padding:28px 40px 34px 40px;border-top:1px solid ${LINIE};font-family:${SCHRIFT};font-size:12px;line-height:1.7;color:${MUTED};">
+  ${zeilen}
+  ${rechtslinks ? `<div style="padding-top:${zeilen ? "12px" : "0"};">${rechtslinks}</div>` : ""}
 </td></tr>`;
 }
 

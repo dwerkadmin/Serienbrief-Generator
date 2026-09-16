@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { buildAbsenderzeile } from "@/lib/absenderzeile";
 import { buildBeratungslinkUrl } from "@/lib/beratungslink";
 import { normalisiereBeratungQrUrl } from "@/lib/beratungQr";
 import { applyMapping } from "@/lib/csv/parseAddresses";
@@ -44,6 +45,63 @@ export default function StepEmail({ state, update }: StepProps) {
 
   const emailSpalte = state.emailSpalte || rateEmailSpalte(state.csvHeaders);
 
+  // Erster Empfänger der Liste - liefert die Absenderzeile, wenn sie je
+  // Empfänger aus der CSV kommt. Die Mail ist EIN Dokument; enthält die Liste
+  // mehrere Arbeitgeber, kann im Fuß nur einer stehen.
+  const ersterEmpfaenger = useMemo(() => {
+    if (state.csvRows.length === 0) return null;
+    try {
+      return applyMapping(state.csvRows.slice(0, 1), state.mapping, state.anredezeileConfig)[0] ?? null;
+    } catch {
+      return null;
+    }
+  }, [state.csvRows, state.mapping, state.anredezeileConfig]);
+
+  const mehrereArbeitgeber = useMemo(() => {
+    if (!state.absenderAusCsv) return false;
+    const spalte = state.mapping.arbeitgebername;
+    if (!spalte) return false;
+    return new Set(state.csvRows.map((r) => (r[spalte] ?? "").trim()).filter(Boolean)).size > 1;
+  }, [state.absenderAusCsv, state.mapping, state.csvRows]);
+
+  /** Vorbelegung des Fußtextes: Absenderzeile plus Kontaktdaten des Ansprechpartners. */
+  const fusstextStandard = useMemo(() => {
+    const ausCsv = state.absenderAusCsv && ersterEmpfaenger !== null;
+    const absenderzeile = ausCsv
+      ? buildAbsenderzeile(
+          ersterEmpfaenger.arbeitgebername,
+          ersterEmpfaenger.arbeitgeberStrasse,
+          ersterEmpfaenger.arbeitgeberPlz,
+          ersterEmpfaenger.arbeitgeberOrt
+        )
+      : buildAbsenderzeile(
+          state.absenderUnternehmensname,
+          state.absenderStrasse,
+          state.absenderPlz,
+          state.absenderOrt
+        );
+
+    const kontakt = [
+      state.ansprechpartnerTelefon.trim() ? `Tel: ${state.ansprechpartnerTelefon.trim()}` : "",
+      state.ansprechpartnerEmail.trim() ? `E-Mail: ${state.ansprechpartnerEmail.trim()}` : "",
+    ]
+      .filter((t) => t !== "")
+      .join(" · ");
+
+    return [absenderzeile, kontakt].filter((t) => t !== "").join("\n");
+  }, [
+    state.absenderAusCsv,
+    state.absenderUnternehmensname,
+    state.absenderStrasse,
+    state.absenderPlz,
+    state.absenderOrt,
+    state.ansprechpartnerTelefon,
+    state.ansprechpartnerEmail,
+    ersterEmpfaenger,
+  ]);
+
+  const fusstext = state.emailFusstext ?? fusstextStandard;
+
   // Ein Standardmotiv aus Schritt 3 liegt öffentlich in diesem Generator und
   // lässt sich deshalb direkt in die Mail einbinden. Ein selbst hochgeladenes
   // Foto hat keine Adresse - dann bleibt nur das Feld unten.
@@ -62,9 +120,9 @@ export default function StepEmail({ state, update }: StepProps) {
       headlineText: state.headlineText,
       bodyHtml: state.bodyHtml,
       unternehmensname: state.absenderUnternehmensname,
-      absenderStrasse: state.absenderStrasse,
-      absenderPlz: state.absenderPlz,
-      absenderOrt: state.absenderOrt,
+      fusstext,
+      impressumUrl: state.emailImpressumUrl,
+      datenschutzUrl: state.emailDatenschutzUrl,
       ansprechpartnerAnrede: state.ansprechpartnerAnrede,
       ansprechpartnerName: state.ansprechpartnerName,
       ansprechpartnerTelefon: state.ansprechpartnerTelefon,
@@ -80,7 +138,7 @@ export default function StepEmail({ state, update }: StepProps) {
       headerBildUrl,
       betreff: state.emailBetreff,
     }),
-    [state, headerBildUrl]
+    [state, headerBildUrl, fusstext]
   );
 
   /** Die Vorlage zum Herunterladen - mit Platzhaltern in der gewählten Schreibweise. */
@@ -216,7 +274,8 @@ export default function StepEmail({ state, update }: StepProps) {
               ) : motivUrl ? (
                 <>
                   Leer lassen: Es wird automatisch das Standardmotiv aus Schritt 3 verwendet
-                  {motivName ? ` („${motivName}“)` : ""}.
+                  {motivName ? ` („${motivName}“)` : ""}. Die Mail lädt es von{" "}
+                  <span className="break-all font-mono text-[11px] text-slate-600">{motivUrl}</span>
                 </>
               ) : (
                 "In Schritt 3 ist ein eigenes Foto hochgeladen — das hat keine Adresse im Internet. Bitte hier eine angeben oder das Feld leer lassen, dann entfällt das Kopfbild."
@@ -226,10 +285,13 @@ export default function StepEmail({ state, update }: StepProps) {
         </div>
 
         <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-          Bilder in einer E-Mail brauchen eine Adresse im Internet — eingebettete Dateien zeigen die
-          meisten E-Mail-Programme nicht an. Die Standardmotive liefert dieser Generator selbst aus.
-          Eigene Bilder am einfachsten in Brevo hochladen und die Adresse von dort einsetzen; ohne
-          Adresse entfällt das jeweilige Bild und die Mail bleibt vollständig.
+          <b>Bilder werden nie in die Mail eingebettet</b>, sondern immer von einer Adresse geladen —
+          eingebettete Dateien zeigen die meisten E-Mail-Programme nicht an. Zwei Adressen kennt der
+          Generator selbst und setzt sie automatisch ein: die sechs Standardmotive (sie liegen
+          öffentlich auf diesem Server) und ein Logo, das in Schritt 1 von einer Webseite geholt
+          wurde. Nur selbst hochgeladene Dateien brauchen hier eine Adresse — am einfachsten in
+          Brevo hochladen und die Adresse von dort einsetzen. Ohne Adresse entfällt das jeweilige
+          Bild und die Mail bleibt vollständig.
         </p>
       </div>
 
@@ -261,6 +323,70 @@ export default function StepEmail({ state, update }: StepProps) {
             Kopieren
           </button>
         </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 p-4">
+        <label className="mb-1 block text-sm font-medium">Absenderangaben im Fuß der Mail</label>
+        <p className="mb-2 text-xs text-slate-500">
+          Steht ganz unten unter der Mail. Vorbelegt mit der Absenderzeile und den Kontaktdaten aus
+          Schritt 1 und 2 — hier frei ergänzbar, etwa um Registergericht, Geschäftsführung oder
+          USt-IdNr.
+        </p>
+        <textarea
+          value={fusstext}
+          onChange={(e) => update({ emailFusstext: e.target.value })}
+          rows={4}
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        />
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <p className="text-xs text-slate-500">
+            Jede Zeile wird übernommen; E-Mail-Adressen darin werden anklickbar.
+          </p>
+          {state.emailFusstext !== null && (
+            <button
+              type="button"
+              onClick={() => update({ emailFusstext: null })}
+              className="text-xs text-sky-700 underline hover:no-underline"
+            >
+              Vorbelegung wiederherstellen
+            </button>
+          )}
+        </div>
+
+        {mehrereArbeitgeber && (
+          <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            Die Adressliste enthält mehrere Arbeitgeber. Anders als der Brief ist die E-Mail{" "}
+            <b>eine</b> Vorlage — im Fuß steht die Anschrift des ersten Empfängers. Für mehrere
+            Absender bitte je Arbeitgeber eine eigene Vorlage erzeugen.
+          </p>
+        )}
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium">Impressum (URL)</label>
+            <input
+              type="url"
+              value={state.emailImpressumUrl}
+              onChange={(e) => update({ emailImpressumUrl: e.target.value })}
+              placeholder="https://…/impressum"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Datenschutz (URL)</label>
+            <input
+              type="url"
+              value={state.emailDatenschutzUrl}
+              onChange={(e) => update({ emailDatenschutzUrl: e.target.value })}
+              placeholder="https://…/datenschutz"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-slate-500">
+          Erscheinen als Links „Impressum“ und „Datenschutz“ unter den Absenderangaben. Bleibt ein
+          Feld leer, entfällt der jeweilige Link.
+        </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
