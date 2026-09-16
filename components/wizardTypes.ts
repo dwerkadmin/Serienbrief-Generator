@@ -96,6 +96,12 @@ export type WizardState = {
   /** Uebergabe an Brevo: verifizierte Absenderadresse und Ziel der Testmail */
   emailBrevoAbsender: string;
   emailBrevoTestmail: string;
+  /**
+   * Antwortadresse der Kampagne. Die technische Absenderadresse muss in Brevo
+   * verifiziert sein; wer antwortet, soll aber beim Arbeitgeber landen.
+   * Leer = keine eigene Antwortadresse, Antworten gehen an den Absender.
+   */
+  emailBrevoAntwortAdresse: string;
 
   // Schritt 4: Adressliste
   csvFile: File | null;
@@ -154,8 +160,11 @@ export const initialWizardState: WizardState = {
   emailFusstext: null,
   emailImpressumUrl: "",
   emailDatenschutzUrl: "",
-  emailBrevoAbsender: "",
+  // Die Standard-Absenderadresse von dWERK; muss in Brevo als Absender
+  // verifiziert sein, sonst bleibt die Auswahlliste bei "wählen".
+  emailBrevoAbsender: "automailer@dwerk.de",
   emailBrevoTestmail: "",
+  emailBrevoAntwortAdresse: "",
 
   csvFile: null,
   csvHeaders: [],

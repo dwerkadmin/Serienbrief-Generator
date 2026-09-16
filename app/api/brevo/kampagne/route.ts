@@ -43,6 +43,8 @@ export async function POST(req: Request) {
   const betreff = text(form, "betreff");
   const absenderEmail = text(form, "absenderEmail").toLowerCase();
   const testEmail = text(form, "testEmail").toLowerCase();
+  const antwortAdresse = text(form, "antwortAdresse").toLowerCase();
+  const absenderAnzeigename = text(form, "absenderAnzeigename");
   const vorschautext = text(form, "vorschautext");
   const html = typeof form.get("html") === "string" ? (form.get("html") as string) : "";
   const kontakteCsv = typeof form.get("kontakteCsv") === "string" ? (form.get("kontakteCsv") as string) : "";
@@ -59,6 +61,9 @@ export async function POST(req: Request) {
   }
   if (testEmail !== "" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(testEmail)) {
     return err("Die Adresse für die Testmail sieht nicht wie eine E-Mail-Adresse aus.");
+  }
+  if (antwortAdresse !== "" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(antwortAdresse)) {
+    return err("Die Antwortadresse sieht nicht wie eine E-Mail-Adresse aus.");
   }
 
   // Zeilen ohne E-Mail-Adresse würde Brevo als Fehler zählen; besser hier
@@ -84,9 +89,19 @@ export async function POST(req: Request) {
       );
     }
 
-    const angelegteAttribute = await stelleAttributeSicher(
+    // Erst die Attribute, dann der Import - und nur, wenn Brevo sie wirklich
+    // fuehrt. Sonst landen die Kontakte ohne Anredezeile und Freischaltcode in
+    // der Liste, und die Mail kaeme an den persoenlichen Stellen leer an.
+    const attribute = await stelleAttributeSicher(
       EMPFAENGER_PLATZHALTER.map((p) => p.brevoAttribut)
     );
+    if (attribute.fehlend.length > 0) {
+      return err(
+        `Brevo fuehrt diese Kontakt-Attribute noch nicht: ${attribute.fehlend.join(", ")}. ` +
+          "Es wurde nichts importiert - bitte in einer Minute noch einmal versuchen, dann sind sie angelegt.",
+        409
+      );
+    }
 
     const listId = await legeListeAn(listenName);
     const processId = await importiereKontakte(kontakteCsv, listId);
@@ -97,8 +112,11 @@ export async function POST(req: Request) {
       betreff,
       html,
       listId,
-      absenderName: treffer.name,
+      // Anzeigename bevorzugt der Arbeitgeber - im Posteingang soll sein Name
+      // stehen, nicht der des technischen Postfachs.
+      absenderName: absenderAnzeigename || treffer.name,
       absenderEmail: treffer.email,
+      antwortAdresse,
       vorschautext,
     });
 
@@ -119,7 +137,7 @@ export async function POST(req: Request) {
       campaignId,
       empfaenger: zeilen.length - 1,
       ohneAdresse,
-      angelegteAttribute,
+      angelegteAttribute: attribute.angelegt,
       importStand,
       testmail,
     });

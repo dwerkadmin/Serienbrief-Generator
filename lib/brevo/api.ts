@@ -87,30 +87,54 @@ export async function ladeAbsender(): Promise<BrevoAbsender[]> {
   return daten.senders ?? [];
 }
 
-/**
- * Legt fehlende Kontakt-Attribute an. Brevo verwirft beim Import stillschweigend
- * jede Spalte, zu der es kein Attribut gibt - ohne diesen Schritt kämen die
- * Kontakte ohne Vorname und Freischaltcode an, und die Mail wäre leer an den
- * personalisierten Stellen.
- */
-export async function stelleAttributeSicher(namen: string[]): Promise<string[]> {
+/** Liest die vorhandenen normalen Kontakt-Attribute als Menge in Großschreibung. */
+async function vorhandeneAttribute(): Promise<Set<string>> {
   const daten = await brevo<{ attributes?: { name: string; category: string }[] }>(
     "/contacts/attributes"
   );
-  const vorhanden = new Set(
+  return new Set(
     (daten.attributes ?? []).filter((a) => a.category === "normal").map((a) => a.name.toUpperCase())
   );
+}
+
+export type AttributStand = { vorher: string[]; angelegt: string[]; fehlend: string[] };
+
+/**
+ * Legt fehlende Kontakt-Attribute an und prüft danach nach, ob sie wirklich da
+ * sind.
+ *
+ * Das Nachprüfen ist der eigentliche Punkt: Brevo verwirft beim Import
+ * kommentarlos jede Spalte, zu der es kein Attribut gibt. Ein frisch angelegtes
+ * Attribut steht nicht sofort zur Verfügung - startet der Import zu früh, kommen
+ * die Kontakte ohne Anredezeile und Freischaltcode an, und niemand merkt etwas,
+ * bis die erste Mail mit leerer Anrede ankommt. Deshalb hier warten, bis Brevo
+ * die Attribute selbst zurückmeldet.
+ */
+export async function stelleAttributeSicher(namen: string[]): Promise<AttributStand> {
+  const vorhanden = await vorhandeneAttribute();
+  const vorher = namen.filter((n) => vorhanden.has(n.toUpperCase()));
+  const fehlten = namen.filter((n) => !vorhanden.has(n.toUpperCase()));
 
   const angelegt: string[] = [];
-  for (const name of namen) {
-    if (vorhanden.has(name.toUpperCase())) continue;
+  for (const name of fehlten) {
     await brevo(`/contacts/attributes/normal/${encodeURIComponent(name)}`, {
       method: "POST",
       body: JSON.stringify({ type: "text" }),
     });
     angelegt.push(name);
   }
-  return angelegt;
+
+  if (angelegt.length === 0) return { vorher, angelegt, fehlend: [] };
+
+  // Bis zu ~10 Sekunden nachsehen, ob Brevo die neuen Attribute fuehrt.
+  let fehlend = angelegt;
+  for (let versuch = 0; versuch < 5 && fehlend.length > 0; versuch++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const jetzt = await vorhandeneAttribute();
+    fehlend = fehlend.filter((n) => !jetzt.has(n.toUpperCase()));
+  }
+
+  return { vorher, angelegt, fehlend };
 }
 
 /** Brevo verlangt beim Anlegen einer Liste einen Ordner - hier den ersten vorhandenen. */
@@ -167,7 +191,7 @@ export async function prozessStand(processId: number): Promise<ProzessStand> {
 
 /** Wartet begrenzt auf den Import. Läuft er länger, geht es ohne ihn weiter -
  *  die Kampagne kann trotzdem angelegt werden, die Liste füllt sich nach. */
-export async function warteAufImport(processId: number, maxMs = 40_000): Promise<ProzessStand> {
+export async function warteAufImport(processId: number, maxMs = 30_000): Promise<ProzessStand> {
   const ende = Date.now() + maxMs;
   let stand: ProzessStand = "queued";
   while (Date.now() < ende) {
@@ -183,8 +207,16 @@ export type KampagnenEingabe = {
   betreff: string;
   html: string;
   listId: number;
+  /**
+   * Anzeigename des Absenders - das, was im Posteingang groß vor der Adresse
+   * steht. Hier der Arbeitgeber, damit die Mail nach ihm aussieht und nicht
+   * nach dem technischen Postfach, über das sie läuft.
+   */
   absenderName: string;
+  /** Technische Absenderadresse; muss in Brevo verifiziert sein. */
   absenderEmail: string;
+  /** Wohin Antworten gehen. Leer = zurück an absenderEmail. */
+  antwortAdresse?: string;
   /** Vorschautext im Posteingang; leer = Brevo nimmt den Anfang der Mail */
   vorschautext?: string;
 };
@@ -202,6 +234,7 @@ export async function legeKampagneAn(eingabe: KampagnenEingabe): Promise<number>
       sender: { name: eingabe.absenderName, email: eingabe.absenderEmail },
       htmlContent: eingabe.html,
       recipients: { listIds: [eingabe.listId] },
+      ...(eingabe.antwortAdresse ? { replyTo: eingabe.antwortAdresse } : {}),
       ...(eingabe.vorschautext ? { previewText: eingabe.vorschautext } : {}),
     }),
   });

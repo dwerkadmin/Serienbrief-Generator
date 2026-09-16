@@ -9,7 +9,7 @@
  * Adresse - es existiert nur im Arbeitsspeicher und muss vom Nutzer selbst
  * irgendwo abgelegt werden, am einfachsten in Brevo.
  */
-import { stockPhotoPublicPath } from "@/lib/stockPhotos";
+import { STOCK_PHOTOS } from "@/lib/stockPhotos";
 
 /**
  * Adresse, unter der dieser Generator öffentlich erreichbar ist. Bewusst nicht
@@ -20,7 +20,16 @@ export const OEFFENTLICHE_BASIS = (
   process.env.NEXT_PUBLIC_OEFFENTLICHE_BASIS ?? "https://briefgenerator.dwerk.net"
 ).replace(/\/+$/, "");
 
-/** Volle Adresse eines Standardmotivs, so wie sie in der Mail stehen muss. */
+/**
+ * Volle Adresse eines Standardmotivs für die Mail.
+ *
+ * Verweist auf die flachere Fassung unter /stock-photos/mail/ - 27 % der Höhe
+ * sind dort weg, je zur Hälfte oben und unten (erzeugt von
+ * scripts/stock-photos-mail-zuschnitt.mjs). Am Bildschirm schiebt ein Kopfbild
+ * in Briefhöhe den eigentlichen Text sonst unter die Falz; auf Seite 2 der PDF
+ * bleibt das Original in voller Höhe.
+ */
 export function stockPhotoOeffentlicheUrl(id: string): string {
-  return `${OEFFENTLICHE_BASIS}${stockPhotoPublicPath(id)}`;
+  const photo = STOCK_PHOTOS.find((p) => p.id === id);
+  return `${OEFFENTLICHE_BASIS}/stock-photos/mail/${id}.${photo?.ext ?? "png"}`;
 }

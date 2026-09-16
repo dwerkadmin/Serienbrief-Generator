@@ -226,6 +226,13 @@ export default function StepEmail({ state, update }: StepProps) {
     [datumStempel, absenderName, "MA-Anschreiben"].filter((t) => t !== "").join(" ");
   const listenName = `${kampagnenName} – Empfänger`;
 
+  // Antworten sollen beim Arbeitgeber landen, nicht im technischen Postfach,
+  // über das die Mail läuft. Leer = Vorbelegung mit der Ansprechpartner-Adresse.
+  const antwortAdresse = state.emailBrevoAntwortAdresse.trim() || state.ansprechpartnerEmail.trim();
+  const absenderVerifiziert = brevoAbsender.some(
+    (a) => a.email.toLowerCase() === state.emailBrevoAbsender.toLowerCase()
+  );
+
   /**
    * Übergibt Kontaktliste und Vorlage an Brevo. Die Vorlage geht dabei immer in
    * der Brevo-Schreibweise hinüber, unabhängig von der Auswahl oben - mit
@@ -264,6 +271,8 @@ export default function StepEmail({ state, update }: StepProps) {
     fd.set("kampagnenName", kampagnenName);
     fd.set("betreff", betreff);
     fd.set("absenderEmail", state.emailBrevoAbsender);
+    fd.set("absenderAnzeigename", absenderName);
+    fd.set("antwortAdresse", antwortAdresse);
     fd.set("testEmail", state.emailBrevoTestmail);
     fd.set("vorschautext", betreff);
     fd.set("html", buildEmailHtml({ ...basis, platzhalterStil: "brevo" }));
@@ -588,11 +597,43 @@ export default function StepEmail({ state, update }: StepProps) {
                     {a.name} ({a.email})
                   </option>
                 ))}
+                {/* Die voreingestellte Adresse auch dann zeigen, wenn Brevo sie
+                    nicht als verifiziert führt - sonst steht hier scheinbar
+                    grundlos "wählen", obwohl etwas eingestellt ist. */}
+                {state.emailBrevoAbsender !== "" && !absenderVerifiziert && (
+                  <option value={state.emailBrevoAbsender}>
+                    {state.emailBrevoAbsender} (in Brevo nicht verifiziert)
+                  </option>
+                )}
               </select>
               <p className="mt-1 text-xs text-slate-500">
                 {brevoAbsender.length === 0
                   ? "In Brevo ist kein verifizierter Absender hinterlegt. Bitte dort unter „Absender“ eintragen und bestätigen."
-                  : "Nur in Brevo verifizierte Adressen — andere lehnt Brevo beim Versand ab."}
+                  : !absenderVerifiziert
+                    ? `${state.emailBrevoAbsender} ist in Brevo nicht als Absender verifiziert — bitte oben eine Adresse aus der Liste wählen.`
+                    : "Nur in Brevo verifizierte Adressen — andere lehnt Brevo beim Versand ab."}
+              </p>
+              {absenderName !== "" && (
+                <p className="mt-1 text-xs text-slate-500">
+                  Im Posteingang erscheint als Absender <b>{absenderName}</b> — die Adresse steht
+                  klein daneben.
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium">Antworten gehen an</label>
+              <input
+                type="email"
+                value={state.emailBrevoAntwortAdresse}
+                onChange={(e) => update({ emailBrevoAntwortAdresse: e.target.value })}
+                placeholder={state.ansprechpartnerEmail || "info@arbeitgeber.de"}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                {antwortAdresse === ""
+                  ? "Ohne Angabe gehen Antworten an die Absenderadresse zurück."
+                  : `Wer auf die Mail antwortet, schreibt an ${antwortAdresse}.`}
               </p>
             </div>
 
