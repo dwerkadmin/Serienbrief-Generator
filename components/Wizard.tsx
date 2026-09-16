@@ -6,6 +6,8 @@ import StepText from "./StepText";
 import StepPhoto from "./StepPhoto";
 import StepAddresses from "./StepAddresses";
 import FileUploadButton from "./FileUploadButton";
+import InfoBereich from "./InfoBereich";
+import Impressum from "./Impressum";
 import { applyMapping } from "@/lib/csv/parseAddresses";
 import { buildConfigExport, parseConfigImport } from "@/lib/configExport";
 import { CUSTOM_FONT_ID } from "@/lib/fonts";
@@ -310,6 +312,9 @@ export default function Wizard() {
           </button>
         )}
       </div>
+
+      <InfoBereich />
+      <Impressum />
     </div>
   );
 }
