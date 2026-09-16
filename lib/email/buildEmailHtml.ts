@@ -25,7 +25,6 @@ import { platzhalter, platzhalterUmschreiben, type PlatzhalterStil } from "@/lib
 const SCHRIFT = "'Open Sans', Arial, Helvetica, sans-serif";
 const TEXT = "#2A2A2E";
 const MUTED = "#6B7280";
-const LINIE = "#DDE3EA";
 const SEITE = "#EFF2F5";
 const BREITE = 720;
 
@@ -326,10 +325,10 @@ function beratungsblock(config: EmailConfig): string {
  * ein falsch zerlegter Anruf-Link wäre schlimmer als gar keiner.
  * Läuft auf bereits escapetem Text - deshalb kein erneutes Escapen.
  */
-function mailadressenVerlinken(escapterText: string): string {
+function mailadressenVerlinken(escapterText: string, farbe: string): string {
   return escapterText.replace(
     /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g,
-    (adresse) => `<a href="mailto:${adresse}" style="color:${MUTED};text-decoration:underline;">${adresse}</a>`
+    (adresse) => `<a href="mailto:${adresse}" style="color:${farbe};text-decoration:underline;">${adresse}</a>`
   );
 }
 
@@ -342,11 +341,29 @@ function mailadressenVerlinken(escapterText: string): string {
  * Maske mit der Absenderzeile, von da an gehört er dem Nutzer.
  */
 function fussbereich(config: EmailConfig): string {
-  const zeilen = config.fusstext
+  // Dunkler Grund, aber nicht neutral grau: die CI-Farbe stark abgedunkelt und
+  // entsättigt. Das wirkt zum übrigen Layout gehörig, bleibt aber deutlich
+  // hinter dem farbigen Zugangsblock zurück - der soll der Blickfang bleiben.
+  const basis = hexZuHsl(config.designColor);
+  const hatFarbton = basis.s >= 0.12;
+  const grund = hslZuHex({ h: basis.h, s: hatFarbton ? 0.22 : 0, l: 0.16 });
+  const nebenton = hslZuHex({ h: basis.h, s: hatFarbton ? 0.14 : 0, l: 0.78 });
+
+  const alleZeilen = config.fusstext
     .split("\n")
     .map((z) => z.trim())
-    .filter((z) => z !== "")
-    .map((z) => mailadressenVerlinken(escapeHtml(z)))
+    .filter((z) => z !== "");
+
+  // Erste Zeile ist der Unternehmensname und steht fett; alles Weitere - also
+  // Anschrift, Kontakt, Registerangaben - bleibt normal. Der Hinweis in der
+  // Maske sagt das, damit beim Bearbeiten niemand rätselt.
+  const zeilen = alleZeilen
+    .map((z, i) => {
+      const inhalt = mailadressenVerlinken(escapeHtml(z), nebenton);
+      return i === 0
+        ? `<span style="font-weight:700;color:#ffffff;">${inhalt}</span>`
+        : inhalt;
+    })
     .join("<br />");
 
   const rechtslinks = [
@@ -357,17 +374,21 @@ function fussbereich(config: EmailConfig): string {
       const ziel = sichereUrl(url);
       return ziel === ""
         ? ""
-        : `<a href="${ziel}" target="_blank" rel="noopener" style="color:${MUTED};text-decoration:underline;">${text}</a>`;
+        : `<a href="${ziel}" target="_blank" rel="noopener" style="color:${nebenton};text-decoration:underline;">${text}</a>`;
     })
     .filter((t) => t !== "")
     .join(" &middot; ");
 
-  // Ohne Inhalt bliebe nur eine Trennlinie mit Leerraum unter der Mail stehen.
+  // Ohne Inhalt bliebe nur ein leerer dunkler Balken unter der Mail stehen.
   if (zeilen === "" && rechtslinks === "") return "";
 
-  return `<tr><td class="rand" style="padding:28px 40px 34px 40px;border-top:1px solid ${LINIE};font-family:${SCHRIFT};font-size:12px;line-height:1.7;color:${MUTED};">
+  // Eigene Leerzeile statt Abstand am vorherigen Block: was oberhalb steht,
+  // wechselt je nach Einstellungen (Beratungsblock, Hinweiszeile, oder nichts
+  // davon) - sonst klebt der dunkle Balken mal an der Farbfläche und mal nicht.
+  return `<tr><td height="26" style="height:26px;line-height:26px;font-size:0;">&nbsp;</td></tr>
+<tr><td class="rand" align="center" valign="middle" bgcolor="${grund}" style="padding:30px 40px;background-color:${grund};border-radius:0 0 10px 10px;font-family:${SCHRIFT};font-size:12px;line-height:1.8;color:${nebenton};text-align:center;vertical-align:middle;">
   ${zeilen}
-  ${rechtslinks ? `<div style="padding-top:${zeilen ? "12px" : "0"};">${rechtslinks}</div>` : ""}
+  ${rechtslinks ? `<div style="padding-top:14px;">${rechtslinks}</div>` : ""}
 </td></tr>`;
 }
 

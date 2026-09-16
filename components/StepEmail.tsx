@@ -102,22 +102,24 @@ export default function StepEmail({ state, update }: StepProps) {
     return new Set(state.csvRows.map((r) => (r[spalte] ?? "").trim()).filter(Boolean)).size > 1;
   }, [state.absenderAusCsv, state.mapping, state.csvRows]);
 
-  /** Vorbelegung des Fußtextes: Absenderzeile plus Kontaktdaten des Ansprechpartners. */
+  /**
+   * Vorbelegung des Fußtextes. Der Unternehmensname bekommt eine eigene erste
+   * Zeile, weil genau diese in der Mail fett gesetzt wird; Anschrift und
+   * Kontakt folgen darunter.
+   */
   const fusstextStandard = useMemo(() => {
     const ausCsv = state.absenderAusCsv && ersterEmpfaenger !== null;
-    const absenderzeile = ausCsv
+    const firma = ausCsv
+      ? ersterEmpfaenger.arbeitgebername.trim()
+      : state.absenderUnternehmensname.trim();
+    const anschrift = ausCsv
       ? buildAbsenderzeile(
-          ersterEmpfaenger.arbeitgebername,
+          "",
           ersterEmpfaenger.arbeitgeberStrasse,
           ersterEmpfaenger.arbeitgeberPlz,
           ersterEmpfaenger.arbeitgeberOrt
         )
-      : buildAbsenderzeile(
-          state.absenderUnternehmensname,
-          state.absenderStrasse,
-          state.absenderPlz,
-          state.absenderOrt
-        );
+      : buildAbsenderzeile("", state.absenderStrasse, state.absenderPlz, state.absenderOrt);
 
     const kontakt = [
       state.ansprechpartnerTelefon.trim() ? `Tel: ${state.ansprechpartnerTelefon.trim()}` : "",
@@ -126,7 +128,7 @@ export default function StepEmail({ state, update }: StepProps) {
       .filter((t) => t !== "")
       .join(" · ");
 
-    return [absenderzeile, kontakt].filter((t) => t !== "").join("\n");
+    return [firma, anschrift, kontakt].filter((t) => t !== "").join("\n");
   }, [
     state.absenderAusCsv,
     state.absenderUnternehmensname,
@@ -459,7 +461,8 @@ export default function StepEmail({ state, update }: StepProps) {
         />
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <p className="text-xs text-slate-500">
-            Jede Zeile wird übernommen; E-Mail-Adressen darin werden anklickbar.
+            Die <b>erste Zeile</b> wird fett gesetzt (der Unternehmensname), alles Weitere normal.
+            Der Block erscheint dunkel hinterlegt und zentriert; E-Mail-Adressen werden anklickbar.
           </p>
           {state.emailFusstext !== null && (
             <button
