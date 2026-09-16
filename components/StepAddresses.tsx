@@ -70,7 +70,12 @@ export default function StepAddresses({ state, update }: StepProps) {
     setError(null);
     setLoadingSample(true);
     try {
-      const res = await fetch(SAMPLE_CSV_PATH);
+      // Ohne "no-store" liefert der Browser die Musterdatei aus seinem Cache
+      // (statische Dateien werden mit vier Stunden Haltbarkeit ausgeliefert).
+      // Nach einer Erweiterung der Datei fehlten dann Spalten, die es laengst
+      // gibt - und niemand kommt auf die Idee, dass der Browser schuld ist.
+      // Die Datei ist ein paar hundert Byte gross, das Caching bringt hier nichts.
+      const res = await fetch(SAMPLE_CSV_PATH, { cache: "no-store" });
       if (!res.ok) throw new Error("Musterdatei konnte nicht geladen werden.");
       const buf = new Uint8Array(await res.arrayBuffer());
       const file = new File([buf], SAMPLE_CSV_NAME, { type: "text/csv" });
