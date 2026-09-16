@@ -213,9 +213,17 @@ export default function StepEmail({ state, update }: StepProps) {
     }
   }
 
+  // Namensschema für Brevo: "YYYY-MM-DD Absender MA-Anschreiben". Das Datum
+  // vorn, damit die Kampagnenliste in Brevo chronologisch sortiert bleibt.
+  // Absender ist der Arbeitgeber - bei "Absender aus CSV" der des ersten
+  // Empfängers, damit Kampagnenname und Fußzeile denselben nennen.
   const datumStempel = new Date().toISOString().slice(0, 10);
-  const firmaKurz = state.absenderUnternehmensname.trim() || "Kampagne";
-  const kampagnenName = kampagnenNameEingabe ?? `${firmaKurz} – bAV – ${datumStempel}`;
+  const absenderName =
+    (state.absenderAusCsv ? (ersterEmpfaenger?.arbeitgebername ?? "").trim() : "") ||
+    state.absenderUnternehmensname.trim();
+  const kampagnenName =
+    kampagnenNameEingabe ??
+    [datumStempel, absenderName, "MA-Anschreiben"].filter((t) => t !== "").join(" ");
   const listenName = `${kampagnenName} – Empfänger`;
 
   /**
