@@ -26,7 +26,7 @@ export default function Impressum() {
           <address className="not-italic">
             dWERK GmbH &amp; Co. KG
             <br />
-            Gewerbering 15
+            Gewerbering 23
             <br />
             76287 Rheinstetten
             <br />
