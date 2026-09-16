@@ -85,21 +85,71 @@ export type AnredeTemplateId =
   | "hallo-vorname"
   | "hallo-vorname-nachname";
 
-export const ANREDE_TEMPLATES: { id: AnredeTemplateId; label: string; build: (vorname: string, nachname: string) => string }[] = [
-  { id: "liebe-vorname", label: "Liebe:r [Vorname],", build: (v) => `Liebe:r ${v},` },
-  { id: "liebe-vorname-nachname", label: "Liebe:r [Vorname] [Nachname],", build: (v, n) => `Liebe:r ${v} ${n},` },
-  { id: "hallo-vorname", label: "Hallo [Vorname],", build: (v) => `Hallo ${v},` },
-  { id: "hallo-vorname-nachname", label: "Hallo [Vorname] [Nachname],", build: (v, n) => `Hallo ${v} ${n},` },
+/**
+ * Geschlecht des Empfängers, sofern eine CSV-Spalte dafür zugeordnet ist.
+ * `null` heißt: keine Spalte gewählt - dann bleibt es bei der geschlechts-
+ * neutralen Form "Liebe:r".
+ */
+export type Geschlecht = "m" | "andere";
+
+// Gängige Schreibweisen für "männlich" in Personallisten. Bewusst großzügig:
+// steht hier eine Variante nicht drin, wird daraus "Liebe Herr Müller" - und
+// das fällt beim Empfänger auf, nicht beim Erzeugen.
+const MAENNLICH = new Set(["m", "m.", "mann", "maennlich", "männlich", "male", "herr", "hr", "1"]);
+
+/** Liest den Zellwert der Geschlechts-Spalte; alles, was nicht männlich ist, gilt als "andere". */
+export function erkenneGeschlecht(wert: string): Geschlecht {
+  return MAENNLICH.has(wert.trim().toLowerCase()) ? "m" : "andere";
+}
+
+/** "Liebe:r" ohne Geschlechtsangabe, sonst "Lieber" bzw. "Liebe". */
+function liebe(geschlecht: Geschlecht | null): string {
+  if (geschlecht === null) return "Liebe:r";
+  return geschlecht === "m" ? "Lieber" : "Liebe";
+}
+
+export const ANREDE_TEMPLATES: {
+  id: AnredeTemplateId;
+  label: string;
+  /** true = das Ergebnis hängt an der Geschlechts-Spalte (für die Beschriftung in der Maske) */
+  geschlechtsabhaengig: boolean;
+  build: (vorname: string, nachname: string, geschlecht: Geschlecht | null) => string;
+}[] = [
+  {
+    id: "liebe-vorname",
+    label: "Liebe:r [Vorname],",
+    geschlechtsabhaengig: true,
+    build: (v, _n, g) => `${liebe(g)} ${v},`,
+  },
+  {
+    id: "liebe-vorname-nachname",
+    label: "Liebe:r [Vorname] [Nachname],",
+    geschlechtsabhaengig: true,
+    build: (v, n, g) => `${liebe(g)} ${v} ${n},`,
+  },
+  { id: "hallo-vorname", label: "Hallo [Vorname],", geschlechtsabhaengig: false, build: (v) => `Hallo ${v},` },
+  {
+    id: "hallo-vorname-nachname",
+    label: "Hallo [Vorname] [Nachname],",
+    geschlechtsabhaengig: false,
+    build: (v, n) => `Hallo ${v} ${n},`,
+  },
 ];
 
-export function buildAnredezeile(templateId: AnredeTemplateId, vorname: string, nachname: string): string {
+export function buildAnredezeile(
+  templateId: AnredeTemplateId,
+  vorname: string,
+  nachname: string,
+  geschlecht: Geschlecht | null = null
+): string {
   const template = ANREDE_TEMPLATES.find((t) => t.id === templateId) ?? ANREDE_TEMPLATES[0];
-  return template.build(vorname, nachname);
+  return template.build(vorname, nachname, geschlecht);
 }
 
 export type AnredezeileConfig =
   | { mode: "column"; column: string }
-  | { mode: "auto"; template: AnredeTemplateId };
+  /** `geschlechtSpalte` ist optional - ohne sie bleibt es bei "Liebe:r". */
+  | { mode: "auto"; template: AnredeTemplateId; geschlechtSpalte?: string };
 
 export type Recipient = Record<SimpleField, string> &
   /** Arbeitgeber-Daten, leer wenn nicht gemappt (siehe EMPLOYER_FIELDS) */
@@ -210,6 +260,16 @@ export function guessAnredezeileColumn(headers: string[]): string | undefined {
   return headers.find((h) => candidates.includes(normalizeHeader(h)));
 }
 
+/**
+ * Rät die Spalte mit dem Geschlecht. Bewusst eng gefasst: eine Spalte "Anrede"
+ * enthält je nach Liste mal "Herr"/"Frau", mal die komplette Briefanrede - die
+ * automatisch zu wählen ginge zu oft daneben.
+ */
+export function guessGeschlechtColumn(headers: string[]): string | undefined {
+  const candidates = ["geschlecht", "gender", "sex", "geschl"];
+  return headers.find((h) => candidates.includes(normalizeHeader(h)));
+}
+
 export function applyMapping(
   rows: Record<string, string>[],
   mapping: ColumnMapping,
@@ -260,10 +320,18 @@ export function applyMapping(
       const header = mapping[field.key];
       rec[field.key] = header ? (row[header] ?? "").trim() : "";
     }
-    rec.anredezeile =
-      anredezeileConfig.mode === "auto"
-        ? buildAnredezeile(anredezeileConfig.template, rec.vorname ?? "", rec.nachname ?? "")
-        : (row[anredezeileConfig.column] ?? "").trim();
+    if (anredezeileConfig.mode === "auto") {
+      const spalte = anredezeileConfig.geschlechtSpalte;
+      const geschlecht = spalte ? erkenneGeschlecht(row[spalte] ?? "") : null;
+      rec.anredezeile = buildAnredezeile(
+        anredezeileConfig.template,
+        rec.vorname ?? "",
+        rec.nachname ?? "",
+        geschlecht
+      );
+    } else {
+      rec.anredezeile = (row[anredezeileConfig.column] ?? "").trim();
+    }
     return rec as Recipient;
   });
 }

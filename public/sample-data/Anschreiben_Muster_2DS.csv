@@ -1,3 +1,3 @@
-Vorname;Nachname;Freischaltcode;Straﬂe + Hausnummer;PLZ;Ort
-Eva;Mustermann;UBP5LTK1;Hauptstraﬂe 1;12345;Musterhausen
-Max;Mustermann;DXSE12XH;Bahnhofstraﬂe 2;12345;Musterstadt
+Vorname;Nachname;Geschlecht;Freischaltcode;Straﬂe + Hausnummer;PLZ;Ort
+Eva;Mustermann;weiblich;UBP5LTK1;Hauptstraﬂe 1;12345;Musterhausen
+Max;Mustermann;m‰nnlich;DXSE12XH;Bahnhofstraﬂe 2;12345;Musterstadt

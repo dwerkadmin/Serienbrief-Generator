@@ -105,6 +105,10 @@ const SCHRITTE: { nr: number; titel: string; punkte: React.ReactNode[] }[] = [
         [Vorname],“ oder „Liebe:r [Vorname] [Nachname],“.
       </>,
       <>
+        <b>Geschlechtergerechte Anrede</b>: enthält die Liste eine Spalte „Geschlecht“, wird aus
+        „Liebe:r“ je Empfänger „Lieber“ oder „Liebe“.
+      </>,
+      <>
         <b>Musterdatei</b> mit zwei Testdatensätzen für einen schnellen Probelauf.
       </>,
     ],

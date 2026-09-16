@@ -11,6 +11,7 @@ import {
   applyMapping,
   decodeCsvBytes,
   guessAnredezeileColumn,
+  guessGeschlechtColumn,
   guessMapping,
   parseCsv,
   splitCsvIntoChunks,
@@ -34,16 +35,17 @@ export default function StepAddresses({ state, update }: StepProps) {
     opts?: { forceAutoTemplate?: AnredeTemplateId }
   ) {
     const guessedColumn = guessAnredezeileColumn(headers);
+    const guessedGeschlecht = guessGeschlechtColumn(headers) ?? "";
     update({
       csvFile: file,
       csvHeaders: headers,
       csvRows: rows,
       mapping: guessMapping(headers),
       anredezeileConfig: opts?.forceAutoTemplate
-        ? { mode: "auto", template: opts.forceAutoTemplate }
+        ? { mode: "auto", template: opts.forceAutoTemplate, geschlechtSpalte: guessedGeschlecht }
         : guessedColumn
           ? { mode: "column", column: guessedColumn }
-          : { mode: "auto", template: "liebe-vorname" },
+          : { mode: "auto", template: "liebe-vorname", geschlechtSpalte: guessedGeschlecht },
     });
   }
 
@@ -129,6 +131,13 @@ export default function StepAddresses({ state, update }: StepProps) {
   }
 
   const usingSample = state.csvFile?.name === SAMPLE_CSV_NAME;
+
+  // Nur im Modus "automatisch generieren" relevant; im Spalten-Modus kommt die
+  // Anredezeile fertig aus der CSV und ein Geschlecht wird nicht gebraucht.
+  const geschlechtSpalte =
+    state.anredezeileConfig.mode === "auto" ? (state.anredezeileConfig.geschlechtSpalte ?? "") : "";
+  const aktuellesTemplate: AnredeTemplateId =
+    state.anredezeileConfig.mode === "auto" ? state.anredezeileConfig.template : "liebe-vorname";
 
   return (
     <div className="space-y-6">
@@ -293,7 +302,15 @@ export default function StepAddresses({ state, update }: StepProps) {
               </button>
               <button
                 type="button"
-                onClick={() => update({ anredezeileConfig: { mode: "auto", template: "liebe-vorname" } })}
+                onClick={() =>
+                  update({
+                    anredezeileConfig: {
+                      mode: "auto",
+                      template: "liebe-vorname",
+                      geschlechtSpalte: guessGeschlechtColumn(state.csvHeaders) ?? "",
+                    },
+                  })
+                }
                 className={`rounded-lg border px-3 py-1.5 text-sm ${
                   state.anredezeileConfig.mode === "auto"
                     ? "border-sky-600 bg-sky-600 text-white"
@@ -318,19 +335,63 @@ export default function StepAddresses({ state, update }: StepProps) {
                 ))}
               </select>
             ) : (
-              <select
-                value={state.anredezeileConfig.template}
-                onChange={(e) =>
-                  update({ anredezeileConfig: { mode: "auto", template: e.target.value as AnredeTemplateId } })
-                }
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm sm:w-1/2"
-              >
-                {ANREDE_TEMPLATES.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
+              <div className="space-y-3">
+                <select
+                  value={state.anredezeileConfig.template}
+                  onChange={(e) =>
+                    update({
+                      anredezeileConfig: {
+                        ...state.anredezeileConfig,
+                        mode: "auto",
+                        template: e.target.value as AnredeTemplateId,
+                      },
+                    })
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm sm:w-1/2"
+                >
+                  {ANREDE_TEMPLATES.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {/* Mit Geschlechts-Spalte wird aus "Liebe:r" je Empfänger
+                          "Lieber" oder "Liebe" - die Auswahlliste soll das zeigen. */}
+                      {t.geschlechtsabhaengig && geschlechtSpalte
+                        ? t.label.replace("Liebe:r", "Lieber/Liebe")
+                        : t.label}
+                    </option>
+                  ))}
+                </select>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                    Spalte „Geschlecht“ (optional)
+                  </label>
+                  <select
+                    value={geschlechtSpalte}
+                    onChange={(e) =>
+                      update({
+                        anredezeileConfig: {
+                          ...state.anredezeileConfig,
+                          mode: "auto",
+                          template: aktuellesTemplate,
+                          geschlechtSpalte: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm sm:w-1/2"
+                  >
+                    <option value="">— ohne, geschlechtsneutral („Liebe:r“) —</option>
+                    {state.csvHeaders.map((h) => (
+                      <option key={h} value={h}>
+                        {h}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Steht in der Spalte „männlich“ oder „m“, wird daraus <b>Lieber</b> — in allen
+                    anderen Fällen <b>Liebe</b>. Auch „Herr“, „Mann“ und „male“ werden als männlich
+                    erkannt. Ohne Spalte bleibt es bei „Liebe:r“.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
 
