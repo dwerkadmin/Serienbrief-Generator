@@ -106,10 +106,13 @@ const SCHRITTE: { nr: number; titel: string; punkte: React.ReactNode[] }[] = [
       </>,
       <>
         <b>Geschlechtergerechte Anrede</b>: enthält die Liste eine Spalte „Geschlecht“, wird aus
-        „Liebe:r“ je Empfänger „Lieber“ oder „Liebe“.
+        „Liebe:r“ je Empfänger „Lieber“ oder „Liebe“. Ohne Angabe bleibt es beim neutralen
+        „Liebe:r“.
       </>,
       <>
-        <b>Musterdatei</b> mit zwei Testdatensätzen für einen schnellen Probelauf.
+        <b>Musterdatei</b> mit zwei Testdatensätzen für einen schnellen Probelauf — mit
+        Geschlecht, Arbeitgeber-Anschrift und Beitragsdaten, sodass sich auch die Absenderzeile
+        aus der CSV und die Beitragsgrafik damit ausprobieren lassen.
       </>,
     ],
   },

@@ -86,20 +86,45 @@ export type AnredeTemplateId =
   | "hallo-vorname-nachname";
 
 /**
- * Geschlecht des Empfängers, sofern eine CSV-Spalte dafür zugeordnet ist.
- * `null` heißt: keine Spalte gewählt - dann bleibt es bei der geschlechts-
- * neutralen Form "Liebe:r".
+ * Geschlecht des Empfängers. `null` heißt "nicht bekannt" - keine Spalte
+ * zugeordnet, Feld leer, oder ein Wert, der weder männlich noch weiblich
+ * meint. Dann bleibt es bei der geschlechtsneutralen Form "Liebe:r".
  */
-export type Geschlecht = "m" | "andere";
+export type Geschlecht = "m" | "w";
 
 // Gängige Schreibweisen für "männlich" in Personallisten. Bewusst großzügig:
 // steht hier eine Variante nicht drin, wird daraus "Liebe Herr Müller" - und
-// das fällt beim Empfänger auf, nicht beim Erzeugen.
+// das fällt erst beim Empfänger auf, nicht beim Erzeugen.
 const MAENNLICH = new Set(["m", "m.", "mann", "maennlich", "männlich", "male", "herr", "hr", "1"]);
 
-/** Liest den Zellwert der Geschlechts-Spalte; alles, was nicht männlich ist, gilt als "andere". */
-export function erkenneGeschlecht(wert: string): Geschlecht {
-  return MAENNLICH.has(wert.trim().toLowerCase()) ? "m" : "andere";
+// Werte, die ausdrücklich KEIN Geschlecht angeben. Sie ergeben "Liebe:r" -
+// "Liebe" wäre hier schlicht falsch.
+const OHNE_ANGABE = new Set([
+  "",
+  "-",
+  "/",
+  "?",
+  "d",
+  "divers",
+  "x",
+  "inter",
+  "unbekannt",
+  "keineangabe",
+  "keine angabe",
+  "k.a.",
+  "ka",
+]);
+
+/**
+ * Liest den Zellwert der Geschlechts-Spalte. Leer oder ausdrücklich ohne
+ * Angabe -> null; männlich -> "m"; alles Übrige gilt als weiblich, weil
+ * Personallisten dort neben "weiblich"/"w" auch "Frau", "2" oder Ähnliches
+ * führen und eine feste Liste davon zu viel verpassen würde.
+ */
+export function erkenneGeschlecht(wert: string): Geschlecht | null {
+  const n = wert.trim().toLowerCase();
+  if (OHNE_ANGABE.has(n)) return null;
+  return MAENNLICH.has(n) ? "m" : "w";
 }
 
 /** "Liebe:r" ohne Geschlechtsangabe, sonst "Lieber" bzw. "Liebe". */

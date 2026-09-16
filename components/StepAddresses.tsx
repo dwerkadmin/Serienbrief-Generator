@@ -76,7 +76,8 @@ export default function StepAddresses({ state, update }: StepProps) {
       const file = new File([buf], SAMPLE_CSV_NAME, { type: "text/csv" });
       const text = decodeCsvBytes(buf);
       const { headers, rows } = parseCsv(text);
-      // Musterdatei enthält bewusst keine Anredezeile-Spalte -> immer automatisch generieren.
+      // Musterdatei enthält bewusst keine fertige Anredezeile-Spalte, damit die
+      // automatische Bildung (samt Geschlechts-Spalte) sichtbar wird.
       applyParsedCsv(file, headers, rows, { forceAutoTemplate: "liebe-vorname-nachname" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Musterdatei konnte nicht geladen werden.");
@@ -227,7 +228,7 @@ export default function StepAddresses({ state, update }: StepProps) {
               </label>
               <p className="mb-3 text-xs text-slate-500">
                 „Absender aus dCRYPT-CSV übernehmen“ ist in Schritt 1 aktiviert — bitte diese vier
-                Spalten zuordnen. (Funktioniert nicht mit der CSV-Musterdatei)
+                Spalten zuordnen. Die eingebaute Musterdatei enthält sie ebenfalls.
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {EMPLOYER_FIELDS.map((field) => (
@@ -386,9 +387,10 @@ export default function StepAddresses({ state, update }: StepProps) {
                     ))}
                   </select>
                   <p className="mt-1 text-xs text-slate-500">
-                    Steht in der Spalte „männlich“ oder „m“, wird daraus <b>Lieber</b> — in allen
-                    anderen Fällen <b>Liebe</b>. Auch „Herr“, „Mann“ und „male“ werden als männlich
-                    erkannt. Ohne Spalte bleibt es bei „Liebe:r“.
+                    Steht in der Spalte „männlich“ oder „m“, wird daraus <b>Lieber</b>, sonst{" "}
+                    <b>Liebe</b>. Auch „Herr“, „Mann“ und „male“ werden als männlich erkannt. Ist
+                    das Feld leer oder steht dort „divers“ bzw. „keine Angabe“, bleibt es bei
+                    <b> Liebe:r</b> — ebenso ohne Spalte.
                   </p>
                 </div>
               </div>
