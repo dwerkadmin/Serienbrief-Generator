@@ -98,6 +98,14 @@ export default function StepLetterhead({ state, update }: StepProps) {
       update({
         logoFile: processed,
         ...(data.suggestedColor ? { designColor: data.suggestedColor } : {}),
+        // Das Logo liegt hier nachweislich öffentlich im Netz - genau das, was
+        // die E-Mail-Vorlage (Schritt 5) braucht. Eine bereits von Hand
+        // eingetragene Adresse wird nicht überschrieben.
+        ...(typeof data.logoSourceUrl === "string" &&
+        /^https?:\/\//i.test(data.logoSourceUrl) &&
+        state.emailLogoUrl.trim() === ""
+          ? { emailLogoUrl: data.logoSourceUrl }
+          : {}),
       });
       setPreview(URL.createObjectURL(processed));
       if (data.suggestedColor) {

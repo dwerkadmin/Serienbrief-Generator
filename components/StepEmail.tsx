@@ -5,6 +5,8 @@ import { buildBeratungslinkUrl } from "@/lib/beratungslink";
 import { normalisiereBeratungQrUrl } from "@/lib/beratungQr";
 import { applyMapping } from "@/lib/csv/parseAddresses";
 import { buildEmailHtml, betreffVorschlag, type EmailConfig } from "@/lib/email/buildEmailHtml";
+import { stockPhotoOeffentlicheUrl } from "@/lib/email/bildAdressen";
+import { STOCK_PHOTOS } from "@/lib/stockPhotos";
 import { EMPFAENGER_PLATZHALTER } from "@/lib/email/platzhalter";
 import {
   BEISPIEL_WERTE,
@@ -42,6 +44,14 @@ export default function StepEmail({ state, update }: StepProps) {
 
   const emailSpalte = state.emailSpalte || rateEmailSpalte(state.csvHeaders);
 
+  // Ein Standardmotiv aus Schritt 3 liegt öffentlich in diesem Generator und
+  // lässt sich deshalb direkt in die Mail einbinden. Ein selbst hochgeladenes
+  // Foto hat keine Adresse - dann bleibt nur das Feld unten.
+  const motivUrl =
+    state.photoMode === "stock" ? stockPhotoOeffentlicheUrl(state.stockPhotoId) : "";
+  const motivName = STOCK_PHOTOS.find((p) => p.id === state.stockPhotoId)?.label ?? "";
+  const headerBildUrl = state.emailHeaderBildUrl.trim() || motivUrl;
+
   // Die Vorlage wird vollständig im Browser gebaut - es geht nichts an den
   // Server, so wie beim Rest des Generators auch.
   const basis: Omit<EmailConfig, "platzhalterStil"> = useMemo(
@@ -67,9 +77,10 @@ export default function StepEmail({ state, update }: StepProps) {
       beratungQrKontaktTelefon: state.beratungQrKontaktTelefon,
       beratungQrKontaktEmail: state.beratungQrKontaktEmail,
       logoUrl: state.emailLogoUrl,
-      headerBildUrl: state.emailHeaderBildUrl,
+      headerBildUrl,
+      betreff: state.emailBetreff,
     }),
-    [state]
+    [state, headerBildUrl]
   );
 
   /** Die Vorlage zum Herunterladen - mit Platzhaltern in der gewählten Schreibweise. */
@@ -93,7 +104,8 @@ export default function StepEmail({ state, update }: StepProps) {
     return platzhalterEinsetzen(intern, werte);
   }, [basis, state.csvRows, state.mapping, state.anredezeileConfig]);
 
-  const betreff = betreffVorschlag({ ...basis, platzhalterStil: state.emailPlatzhalterStil });
+  const betreffStandard = betreffVorschlag(state.duSieMode);
+  const betreff = state.emailBetreff.trim() || betreffStandard;
   const beratungslink = basis.beratungslinkUrl;
 
   async function kopieren(text: string, was: string) {
@@ -166,34 +178,60 @@ export default function StepEmail({ state, update }: StepProps) {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-sm font-medium">Logo-Adresse (optional)</label>
-          <input
-            type="url"
-            value={state.emailLogoUrl}
-            onChange={(e) => update({ emailLogoUrl: e.target.value })}
-            placeholder="https://…/logo.png"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
+      <div className="rounded-lg border border-slate-200 p-4">
+        <div className="mb-1 text-sm font-medium">Bilder im Kopf der Mail</div>
+        <p className="mb-4 text-xs text-slate-500">
+          Ganz oben steht das Unternehmenslogo, darunter das Kopfbild über die volle Breite.
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium">Logo-Adresse</label>
+            <input
+              type="url"
+              value={state.emailLogoUrl}
+              onChange={(e) => update({ emailLogoUrl: e.target.value })}
+              placeholder="https://…/logo.png"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              {state.emailLogoUrl.trim() === ""
+                ? "Ohne Adresse erscheint kein Logo. Wurde das Logo in Schritt 1 von einer Webseite geholt, steht die Adresse hier automatisch."
+                : "Wird ganz oben in der Mail angezeigt."}
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Kopfbild-Adresse</label>
+            <input
+              type="url"
+              value={state.emailHeaderBildUrl}
+              onChange={(e) => update({ emailHeaderBildUrl: e.target.value })}
+              placeholder={motivUrl || "https://…/header.jpg"}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              {state.emailHeaderBildUrl.trim() !== "" ? (
+                "Eigene Adresse — überschreibt das Motiv aus Schritt 3."
+              ) : motivUrl ? (
+                <>
+                  Leer lassen: Es wird automatisch das Standardmotiv aus Schritt 3 verwendet
+                  {motivName ? ` („${motivName}“)` : ""}.
+                </>
+              ) : (
+                "In Schritt 3 ist ein eigenes Foto hochgeladen — das hat keine Adresse im Internet. Bitte hier eine angeben oder das Feld leer lassen, dann entfällt das Kopfbild."
+              )}
+            </p>
+          </div>
         </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">Kopfbild-Adresse (optional)</label>
-          <input
-            type="url"
-            value={state.emailHeaderBildUrl}
-            onChange={(e) => update({ emailHeaderBildUrl: e.target.value })}
-            placeholder="https://…/header.jpg"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
+
+        <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+          Bilder in einer E-Mail brauchen eine Adresse im Internet — eingebettete Dateien zeigen die
+          meisten E-Mail-Programme nicht an. Die Standardmotive liefert dieser Generator selbst aus.
+          Eigene Bilder am einfachsten in Brevo hochladen und die Adresse von dort einsetzen; ohne
+          Adresse entfällt das jeweilige Bild und die Mail bleibt vollständig.
+        </p>
       </div>
-      <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-        Bilder müssen im Internet erreichbar sein — am einfachsten in Brevo hochladen und die Adresse
-        von dort einsetzen. Hochgeladene Dateien aus Schritt 1 und 3 lassen sich nicht verwenden:
-        E-Mail-Programme zeigen eingebettete Bilder überwiegend nicht an. Ohne Adresse entfällt das
-        jeweilige Bild, die Mail bleibt vollständig.
-      </p>
 
       {beratungslink === "" && (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
@@ -203,9 +241,18 @@ export default function StepEmail({ state, update }: StepProps) {
       )}
 
       <div className="rounded-lg border border-slate-200 p-4">
-        <div className="mb-2 text-sm font-medium">Betreffvorschlag</div>
+        <label className="mb-1 block text-sm font-medium">Betreff</label>
+        <p className="mb-2 text-xs text-slate-500">
+          Leer lassen für den Standardvorschlag: „{betreffStandard}“
+        </p>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <code className="flex-1 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">{betreff}</code>
+          <input
+            type="text"
+            value={state.emailBetreff}
+            onChange={(e) => update({ emailBetreff: e.target.value })}
+            placeholder={betreffStandard}
+            className="w-full flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
           <button
             type="button"
             onClick={() => kopieren(betreff, "Betreff")}

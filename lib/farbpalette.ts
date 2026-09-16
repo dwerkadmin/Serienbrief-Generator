@@ -152,3 +152,29 @@ export function beitragsfarbenAusCi(ciFarbe: string): Beitragsfarben {
 
   return { eigenbeitrag, ersparnis, agZuschuss };
 }
+
+/**
+ * Farbe für die Handlungs-Schaltfläche in der E-Mail ("Jetzt beraten lassen").
+ *
+ * Sie liegt auf einer Fläche in der CI-Farbe und soll dort auffallen, ohne
+ * fremd zu wirken - deshalb der Gegenton (Farbkreis um 180 Grad gedreht) mit
+ * kräftigerer Sättigung. Zu einem Blau ergibt das ein warmes Orange, zu einem
+ * Grün ein Magenta.
+ *
+ * Anders als die Segmentfarben der Beitragsgrafik wird hier bewusst NICHT nur
+ * leicht gedreht: ein Nachbarton würde neben der CI-Farbe als Fehler gelesen,
+ * nicht als Akzent.
+ */
+export function aktionsfarbeAusCi(ciFarbe: string): string {
+  const basis = hexZuHsl(ciFarbe);
+  const h = basis.s < 0.15 ? VORGABE_WINKEL : basis.h;
+  let gegen = ((h + 180) % 360 + 360) % 360;
+
+  // Landet der Gegenton im Gelb-/Olivbereich, wird er beim Abdunkeln
+  // schmutzig - dann auf ein sattes Orange ausweichen.
+  if (gegen >= 50 && gegen <= 95) gegen = 32;
+
+  // Sättigung anheben: der Akzent darf deutlich kräftiger sein als die CI-Farbe.
+  const s = Math.min(0.92, Math.max(0.62, basis.s + 0.2));
+  return aufKontrastAbdunkeln({ h: gegen, s, l: 0.52 }, MINDESTKONTRAST);
+}

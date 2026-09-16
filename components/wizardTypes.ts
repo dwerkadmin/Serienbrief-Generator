@@ -82,6 +82,8 @@ export type WizardState = {
   emailPlatzhalterStil: PlatzhalterStil;
   /** CSV-Spalte mit der E-Mail-Adresse - nur für den Export der Kontaktliste */
   emailSpalte: string;
+  /** Betreffzeile der Mail; leer = Standardvorschlag (siehe betreffVorschlag) */
+  emailBetreff: string;
 
   // Schritt 4: Adressliste
   csvFile: File | null;
@@ -136,6 +138,7 @@ export const initialWizardState: WizardState = {
   emailHeaderBildUrl: "",
   emailPlatzhalterStil: "brevo",
   emailSpalte: "",
+  emailBetreff: "",
 
   csvFile: null,
   csvHeaders: [],

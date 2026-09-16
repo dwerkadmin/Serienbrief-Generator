@@ -17,7 +17,7 @@
  * weder Flexbox noch Grid noch <style>-Regeln zuverlässig.
  */
 import { beratungQrStandardUeberschrift } from "@/lib/beratungQr";
-import { kontrastZuWeiss } from "@/lib/farbpalette";
+import { aktionsfarbeAusCi, hexZuHsl, hslZuHex, kontrastZuWeiss } from "@/lib/farbpalette";
 import type { DuSieMode } from "@/lib/pdf/buildHtml";
 import { buildBeitragsTabelle } from "@/lib/email/beitragsTabelle";
 import { platzhalter, platzhalterUmschreiben, type PlatzhalterStil } from "@/lib/email/platzhalter";
@@ -63,6 +63,10 @@ export type EmailConfig = {
   /** Öffentlich erreichbare Bild-Adressen; leer = das Element entfällt */
   logoUrl: string;
   headerBildUrl: string;
+
+  /** Betreffzeile; leer = Vorschlag aus betreffVorschlag(). Steht als Titel und
+   *  als Vorschautext (die Zeile, die im Posteingang hinter dem Betreff steht). */
+  betreff: string;
 
   platzhalterStil: PlatzhalterStil;
 };
@@ -159,29 +163,36 @@ function fliesstextAufbereiten(html: string, ciFarbe: string): string {
   return ergebnis;
 }
 
-/** Betreffvorschlag aus der Überschrift bzw. dem Unternehmensnamen. */
-export function betreffVorschlag(config: EmailConfig): string {
-  const ausUeberschrift = config.showHeadline ? config.headlineText.split("\n")[0].trim() : "";
-  if (ausUeberschrift !== "") return ausUeberschrift;
-  const firma = config.unternehmensname.trim();
-  const du = config.duSieMode === "du";
-  if (firma !== "") return du ? `Deine Betriebsrente bei ${firma}` : `Ihre Betriebsrente bei ${firma}`;
-  return du ? "Deine betriebliche Altersvorsorge" : "Ihre betriebliche Altersvorsorge";
+/**
+ * Vorgeschlagene Betreffzeile. Bewusst unabhängig von der Überschrift des
+ * Anschreibens: die ist eine Werbeaussage ("Warum Geld verschenken?") und liest
+ * sich im Posteingang wie Reklame. Der Betreff benennt stattdessen, was in der
+ * Mail steckt - das ist die Zeile, die über das Öffnen entscheidet.
+ */
+export function betreffVorschlag(duSie: DuSieMode): string {
+  return duSie === "du"
+    ? "Dein Zugang für die digitale Altersvorsorge"
+    : "Ihr Zugang für die digitale Altersvorsorge";
 }
 
+/**
+ * Kopf der Mail: zuerst das Unternehmenslogo auf weißem Grund, darunter das
+ * Kopfbild über die volle Breite. Reihenfolge wie beim Briefbogen - der
+ * Absender steht oben, das Motiv ist Beiwerk.
+ */
 function kopfbereich(config: EmailConfig): string {
   const bild = sichereUrl(config.headerBildUrl);
   const logo = sichereUrl(config.logoUrl);
+
+  const logoZeile = logo
+    ? `<tr><td class="rand" style="padding:28px 40px ${bild ? "24px" : "0"} 40px;"><img src="${logo}" alt="${escapeHtml(config.unternehmensname)}" style="display:block;max-height:64px;max-width:240px;height:auto;border:0;" /></td></tr>`
+    : "";
 
   const bildZeile = bild
     ? `<tr><td style="padding:0;font-size:0;line-height:0;"><img src="${bild}" width="${BREITE}" alt="" style="display:block;width:100%;max-width:${BREITE}px;height:auto;border:0;" /></td></tr>`
     : "";
 
-  const logoZeile = logo
-    ? `<tr><td style="padding:24px 40px 0 40px;"><img src="${logo}" alt="${escapeHtml(config.unternehmensname)}" style="display:block;max-height:60px;max-width:220px;height:auto;border:0;" /></td></tr>`
-    : "";
-
-  return bildZeile + logoZeile;
+  return logoZeile + bildZeile;
 }
 
 function ueberschrift(config: EmailConfig): string {
@@ -195,43 +206,72 @@ function ueberschrift(config: EmailConfig): string {
 }
 
 /**
- * Der Zugangsblock ersetzt die komplette zweite Briefseite: Schaltfläche statt
- * QR-Code, Freischaltcode als hervorgehobenes Feld. Die Adresse steht zusätzlich
- * als Text darunter - manche Firmen-Postfächer schreiben Links um oder zeigen
- * sie nicht als Schaltfläche an.
+ * Der Zugangsblock ersetzt die komplette zweite Briefseite. Er ist bewusst der
+ * auffälligste Teil der Mail: eine Fläche in der CI-Farbe, darauf die
+ * Schaltfläche im Gegenton (siehe aktionsfarbeAusCi) - das ist der eine Klick,
+ * auf den es in dieser Mail ankommt.
+ *
+ * Die Adresse steht als grauer Text unter der Fläche, nicht darauf: manche
+ * Firmen-Postfächer schreiben Links um oder zeigen Schaltflächen nicht an, und
+ * Kleintext liest sich auf Weiß besser als auf Farbe.
  */
 function zugangsblock(config: EmailConfig): string {
   const du = config.duSieMode === "du";
   const ziel = sichereUrl(config.beratungslinkUrl);
   const code = platzhalter("Freischaltcode", config.platzhalterStil);
+  const ci = config.designColor;
+  const aktion = aktionsfarbeAusCi(ci);
+  const auffarbe = schriftAufFarbe(ci);
+
+  // Abgestufter Ton für Vorspann und Schrittmarken: auf einer dunklen CI-Fläche
+  // ein heller Ton, auf einer hellen ein dunkler - sonst verschwindet er.
+  const basis = hexZuHsl(ci);
+  const nebenton = hslZuHex({
+    h: basis.h,
+    s: Math.min(basis.s, 0.5),
+    l: auffarbe === "#ffffff" ? 0.84 : 0.3,
+  });
 
   const titel = du ? "Dein Zugang zur persönlichen Beratung" : "Ihr Zugang zur persönlichen Beratung";
-  const schritt2 = du
-    ? "2. Freischaltcode deiner persönlichen Berechnung"
-    : "2. Freischaltcode Ihrer persönlichen Berechnung";
+  const vorspann = du
+    ? "Zwei Schritte, fünf Minuten - danach weißt du centgenau, was deine Betriebsrente bringt."
+    : "Zwei Schritte, fünf Minuten - danach wissen Sie centgenau, was Ihre Betriebsrente bringt.";
+  const codeTitel = du ? "Schritt 2 · Dein Freischaltcode" : "Schritt 2 · Ihr Freischaltcode";
+
+  const schrittMarke = (text: string) =>
+    `<tr><td align="center" style="padding:0 0 12px 0;font-family:${SCHRIFT};font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:${nebenton};">${escapeHtml(text)}</td></tr>`;
 
   const knopf = ziel
-    ? `<tr><td align="center" style="padding:4px 0 14px 0;">${schaltflaeche(config.beratungslinkUrl, "Jetzt klicken und beraten lassen", config.designColor)}</td></tr>
-        <tr><td align="center" style="padding:0 0 22px 0;font-family:${SCHRIFT};font-size:12px;line-height:1.5;color:${MUTED};">Falls die Schaltfläche nicht funktioniert: <a href="${ziel}" target="_blank" rel="noopener" style="color:${MUTED};">${ziel}</a></td></tr>`
+    ? schrittMarke("Schritt 1 · Start des Prozesses") +
+      `<tr><td align="center" style="padding:0 0 30px 0;">${schaltflaeche(
+        config.beratungslinkUrl,
+        "Jetzt beraten lassen →",
+        aktion
+      )}</td></tr>`
     : "";
 
-  return `<tr><td class="rand" style="padding:10px 40px 0 40px;">
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;border-collapse:collapse;background-color:#F7F9FB;border:1px solid ${LINIE};border-radius:8px;">
-    <tr><td style="padding:24px 24px 4px 24px;">
+  const hinweis = ziel
+    ? `<tr><td class="rand" align="center" style="padding:12px 40px 0 40px;font-family:${SCHRIFT};font-size:12px;line-height:1.5;color:${MUTED};">Falls die Schaltfläche nicht funktioniert: <a href="${ziel}" target="_blank" rel="noopener" style="color:${MUTED};">${ziel}</a></td></tr>`
+    : "";
+
+  return `<tr><td class="rand" style="padding:14px 40px 0 40px;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;border-collapse:collapse;background-color:${ci};border-radius:10px;">
+    <tr><td bgcolor="${ci}" style="padding:32px 28px 34px 28px;border-radius:10px;">
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;border-collapse:collapse;">
-        <tr><td align="center" style="padding:0 0 18px 0;font-family:${SCHRIFT};font-size:19px;font-weight:700;color:${config.designColor};">${escapeHtml(titel)}</td></tr>
-        <tr><td align="center" style="padding:0 0 10px 0;font-family:${SCHRIFT};font-size:14px;font-weight:700;color:${TEXT};">1. Start des Prozesses</td></tr>
+        <tr><td align="center" style="padding:0 0 8px 0;font-family:${SCHRIFT};font-size:23px;line-height:1.25;font-weight:700;color:${auffarbe};">${escapeHtml(titel)}</td></tr>
+        <tr><td align="center" style="padding:0 0 26px 0;font-family:${SCHRIFT};font-size:14px;line-height:1.55;color:${nebenton};">${escapeHtml(vorspann)}</td></tr>
         ${knopf}
-        <tr><td align="center" style="padding:0 0 10px 0;font-family:${SCHRIFT};font-size:14px;font-weight:700;color:${TEXT};">${escapeHtml(schritt2)}</td></tr>
-        <tr><td align="center" style="padding:0 0 22px 0;">
+        ${schrittMarke(codeTitel)}
+        <tr><td align="center" style="padding:0;">
           <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="border-collapse:separate;">
-            <tr><td align="center" bgcolor="#FFFFFF" style="border:2px solid ${config.designColor};border-radius:6px;padding:12px 26px;font-family:'Courier New',Courier,monospace;font-size:22px;font-weight:700;letter-spacing:2px;color:${TEXT};">${code}</td></tr>
+            <tr><td align="center" bgcolor="#FFFFFF" style="border-radius:8px;padding:14px 30px;font-family:'Courier New',Courier,monospace;font-size:24px;font-weight:700;letter-spacing:3px;color:${ci};">${code}</td></tr>
           </table>
         </td></tr>
       </table>
     </td></tr>
   </table>
-</td></tr>`;
+</td></tr>
+${hinweis}`;
 }
 
 /** Zweite Schaltfläche: persönlicher Beratungstermin (im Brief der untere QR-Code). */
@@ -330,7 +370,7 @@ export function buildEmailHtml(config: EmailConfig): string {
   text = fliesstextAufbereiten(text, config.designColor);
   text = text.split(TABELLEN_MARKE).join(buildBeitragsTabelle(config.designColor, config.duSieMode, stil));
 
-  const vorschau = escapeHtml(betreffVorschlag(config));
+  const vorschau = escapeHtml(config.betreff.trim() || betreffVorschlag(config.duSieMode));
 
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="de">

@@ -68,6 +68,7 @@ type ExportedConfig = {
   emailHeaderBildUrl?: string;
   emailPlatzhalterStil?: WizardState["emailPlatzhalterStil"];
   emailSpalte?: string;
+  emailBetreff?: string;
 
   mapping: WizardState["mapping"];
   anredezeileConfig: WizardState["anredezeileConfig"];
@@ -141,6 +142,7 @@ export async function buildConfigExport(state: WizardState): Promise<string> {
     emailHeaderBildUrl: state.emailHeaderBildUrl,
     emailPlatzhalterStil: state.emailPlatzhalterStil,
     emailSpalte: state.emailSpalte,
+    emailBetreff: state.emailBetreff,
 
     mapping: state.mapping,
     anredezeileConfig: state.anredezeileConfig,
@@ -214,6 +216,7 @@ export function parseConfigImport(jsonText: string): Partial<WizardState> {
     emailHeaderBildUrl: config.emailHeaderBildUrl ?? "",
     emailPlatzhalterStil: config.emailPlatzhalterStil ?? "brevo",
     emailSpalte: config.emailSpalte ?? "",
+    emailBetreff: config.emailBetreff ?? "",
 
     mapping: config.mapping,
     anredezeileConfig: config.anredezeileConfig,

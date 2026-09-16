@@ -372,9 +372,11 @@ export default function FunktionenBereich() {
             </li>
           </ul>
           <div className="mt-3 rounded-lg border-l-4 border-sky-600 bg-sky-50 px-4 py-3">
-            <b>Bilder brauchen eine Adresse im Internet.</b> Logo und Kopfbild werden als URL
-            angegeben, nicht hochgeladen: eingebettete Bilder zeigen die meisten E-Mail-Programme
-            nicht an. Ohne Adresse entfällt das Bild, die Mail bleibt vollständig.
+            <b>Bilder brauchen eine Adresse im Internet.</b> Ein Standardmotiv aus Schritt 3 wird
+            automatisch eingesetzt, und ein von einer Webseite geholtes Logo ebenfalls. Nur für
+            selbst hochgeladene Dateien ist eine Adresse von Hand nötig — eingebettete Bilder
+            zeigen die meisten E-Mail-Programme nicht an. Ohne Adresse entfällt das Bild, die Mail
+            bleibt vollständig.
           </div>
         </section>
 
