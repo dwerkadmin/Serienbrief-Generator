@@ -31,11 +31,33 @@ export const EMPFAENGER_PLATZHALTER = [
 export type EmpfaengerPlatzhalter = (typeof EMPFAENGER_PLATZHALTER)[number]["intern"];
 
 /**
+ * Ausgabe der Anredezeile in der Brevo-Schreibweise.
+ *
+ * Ein schlichtes {{ contact.ANREDEZEILE }} bleibt überall dort leer, wo Brevo
+ * keinen Kontakt kennt: in der Vorschau im Kampagnen-Editor, in einer Testmail
+ * an eine Adresse, die nicht in der Liste steht, und bei einem Kontakt, dessen
+ * Attribut beim Import leer geblieben ist. Eine Mail, die mit einer leeren
+ * Zeile anfängt, sieht nach Fehler aus - deshalb hier drei Stufen.
+ *
+ * Bewusst KEIN |default:"…": der Filter nimmt nur festen Text, keine weiteren
+ * Variablen - "Liebe:r [Vorname] [Nachname]," ließe sich damit nicht bilden.
+ * Vor- und Nachname einzeln abzufragen erspart das doppelte Leerzeichen, wenn
+ * nur eines von beiden gefüllt ist.
+ */
+export const ANREDEZEILE_BREVO =
+  "{% if contact.ANREDEZEILE %}{{ contact.ANREDEZEILE }}" +
+  "{% elif contact.VORNAME and contact.NACHNAME %}Liebe:r {{ contact.VORNAME }} {{ contact.NACHNAME }}," +
+  "{% elif contact.VORNAME %}Liebe:r {{ contact.VORNAME }}," +
+  "{% elif contact.NACHNAME %}Liebe:r {{ contact.NACHNAME }}," +
+  "{% else %}Guten Tag,{% endif %}";
+
+/**
  * Liefert den fertigen Platzhalter-Text für ein Feld in der gewünschten
  * Schreibweise - also genau das, was am Ende in der E-Mail-Vorlage steht.
  */
 export function platzhalter(feld: EmpfaengerPlatzhalter, stil: PlatzhalterStil): string {
   if (stil === "intern") return `{{${feld}}}`;
+  if (feld === "Anredezeile") return ANREDEZEILE_BREVO;
   const eintrag = EMPFAENGER_PLATZHALTER.find((p) => p.intern === feld);
   return `{{ contact.${eintrag ? eintrag.brevoAttribut : feld.toUpperCase()} }}`;
 }
@@ -49,8 +71,11 @@ export function platzhalterUmschreiben(html: string, stil: PlatzhalterStil): str
   if (stil === "intern") return html;
   let ergebnis = html;
   for (const p of EMPFAENGER_PLATZHALTER) {
-    const muster = new RegExp(`\{\{\s*${p.intern}\s*\}\}`, "g");
-    ergebnis = ergebnis.replace(muster, `{{ contact.${p.brevoAttribut} }}`);
+    // Doppelte Backslashes: im Template-String wird \s sonst zu einem blossen "s",
+    // und {{ Anredezeile }} mit Leerzeichen bliebe unuebersetzt stehen.
+    const muster = new RegExp(`\\{\\{\\s*${p.intern}\\s*\\}\\}`, "g");
+    const ersatz = p.intern === "Anredezeile" ? ANREDEZEILE_BREVO : `{{ contact.${p.brevoAttribut} }}`;
+    ergebnis = ergebnis.replace(muster, () => ersatz);
   }
   return ergebnis;
 }
