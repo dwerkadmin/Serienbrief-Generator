@@ -4,6 +4,7 @@ import { useState } from "react";
 import { compressImageFile } from "@/lib/clientImage";
 import { BERATUNGSLINK_DOMAINS, buildBeratungslinkUrl } from "@/lib/beratungslink";
 import { STOCK_PHOTOS, stockPhotoPublicPath } from "@/lib/stockPhotos";
+import { overlayStandardText } from "@/lib/seite2Overlay";
 import {
   beratungQrStandardUeberschrift,
   istBeratungQrUrlGueltig,
@@ -100,6 +101,41 @@ export default function StepPhoto({ state, update }: StepProps) {
           ))}
         </div>
       )}
+
+      <div className="rounded-lg border border-slate-200 p-4">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={state.overlayZeigen}
+            onChange={(e) => update({ overlayZeigen: e.target.checked })}
+            className="h-4 w-4 accent-sky-600"
+          />
+          Schriftzug über dem Headerbild anzeigen
+        </label>
+        <p className="mb-2 mt-1 text-xs text-slate-500">
+          Der dunkel hinterlegte Text unten links im Bild. Ohne Haken bleibt das Bild
+          unbeschriftet.
+        </p>
+
+        {state.overlayZeigen && (
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">
+              Eigener Text (optional)
+            </label>
+            <textarea
+              value={state.overlayText}
+              onChange={(e) => update({ overlayText: e.target.value })}
+              rows={2}
+              placeholder={overlayStandardText(state.duSieMode)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Leer lassen für den Standardtext. Jede Zeile wird als eigene Zeile gesetzt — zwei
+              kurze Zeilen wirken auf dem Bild besser als eine lange.
+            </p>
+          </div>
+        )}
+      </div>
 
       <div className="border-t-2 border-sky-600 pt-6">
         <label className="mb-1 block text-sm font-medium">Beratungslink-URL</label>

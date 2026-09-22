@@ -60,6 +60,10 @@ export type WizardState = {
   photoMode: "upload" | "stock";
   photoFile: File | null;
   stockPhotoId: string;
+  /** Schriftzug ueber dem Headerbild auf Seite 2 */
+  overlayZeigen: boolean;
+  /** Eigener Text dafuer; leer = Du/Sie-abhaengiger Standardtext */
+  overlayText: string;
   beratungslinkSubdomain: string;
   beratungslinkDomain: string;
   /** Optionaler zweiter QR-Code am Fuß von Seite 2: Weg zur persönlichen Beratung */
@@ -143,6 +147,8 @@ export const initialWizardState: WizardState = {
   photoMode: "stock",
   photoFile: null,
   stockPhotoId: "1",
+  overlayZeigen: true,
+  overlayText: "",
   beratungslinkSubdomain: "",
   beratungslinkDomain: DEFAULT_BERATUNGSLINK_DOMAIN,
   beratungQrAktiv: false,

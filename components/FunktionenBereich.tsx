@@ -76,6 +76,10 @@ const SCHRITTE: { nr: number; titel: string; punkte: React.ReactNode[] }[] = [
         <b>Headerbild</b>: eigenes Foto oder eines von sechs Standardmotiven.
       </>,
       <>
+        <b>Schriftzug über dem Headerbild</b> - abschaltbar, und der Text lässt sich durch einen
+        eigenen ersetzen.
+      </>,
+      <>
         <b>Beratungslink</b> — erscheint als Adresse zum Abtippen <em>und</em> als QR-Code.
       </>,
       <>

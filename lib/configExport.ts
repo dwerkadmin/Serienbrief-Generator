@@ -53,6 +53,9 @@ type ExportedConfig = {
   photoMode: WizardState["photoMode"];
   photoFile: SerializedFile | null;
   stockPhotoId: string;
+  /** Erst ab dieser Fassung vorhanden - alte Dateien zeigen den Schriftzug wie bisher. */
+  overlayZeigen?: boolean;
+  overlayText?: string;
   beratungslinkSubdomain: string;
   beratungslinkDomain: string;
   /** Erst ab dieser Fassung vorhanden - alte Dateien haben die Felder nicht. */
@@ -135,6 +138,8 @@ export async function buildConfigExport(state: WizardState): Promise<string> {
     photoMode: state.photoMode,
     photoFile: await serializeFile(state.photoFile),
     stockPhotoId: state.stockPhotoId,
+    overlayZeigen: state.overlayZeigen,
+    overlayText: state.overlayText,
     beratungslinkSubdomain: state.beratungslinkSubdomain,
     beratungslinkDomain: state.beratungslinkDomain,
     beratungQrAktiv: state.beratungQrAktiv,
@@ -215,6 +220,8 @@ export function parseConfigImport(jsonText: string): Partial<WizardState> {
     photoMode: config.photoMode,
     photoFile: deserializeFile(config.photoFile),
     stockPhotoId: config.stockPhotoId,
+    overlayZeigen: config.overlayZeigen ?? true,
+    overlayText: config.overlayText ?? "",
     beratungslinkSubdomain: config.beratungslinkSubdomain,
     beratungslinkDomain: config.beratungslinkDomain,
     beratungQrAktiv: config.beratungQrAktiv ?? false,

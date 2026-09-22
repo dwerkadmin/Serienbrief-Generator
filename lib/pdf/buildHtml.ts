@@ -3,6 +3,7 @@ import type { Recipient } from "@/lib/csv/parseAddresses";
 import { buildAbsenderzeile } from "@/lib/absenderzeile";
 import { buildBeitragsgrafikSvg, parseGermanDecimal } from "@/lib/beitragsgrafik";
 import { getFont } from "@/lib/fonts";
+import { overlayZeilen } from "@/lib/seite2Overlay";
 
 export type LogoPosition = "left" | "center" | "right";
 export type DuSieMode = "du" | "sie";
@@ -34,6 +35,10 @@ export type LetterConfig = {
   dateMonthOffset: number; // 0 = aktueller Monat, 1 = nächster, 2 = übernächster
   letterhead: LetterheadConfig;
   page2PhotoDataUrl: string; // aufgelöstes Headerbild (Upload oder Standardmotiv) für Seite 2
+  /** Schriftzug über dem Headerbild auf Seite 2; false = Bild bleibt unbeschriftet */
+  overlayZeigen: boolean;
+  /** Eigener Text dafür, Zeilenumbrüche werden übernommen; leer = Standardtext */
+  overlayText: string;
   duSieMode: DuSieMode;
   beratungslinkUrl: string;
   qrCodeDataUrl: string; // vorab serverseitig generierter QR-Code (für beratungslinkUrl)
@@ -122,11 +127,6 @@ function addMonths(date: Date, offset: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + offset, 1);
 }
 
-function overlayLines(mode: DuSieMode): [string, string] {
-  return mode === "du"
-    ? ["In nur drei Schritten in", "deinen sicheren Ruhestand"]
-    : ["In nur drei Schritten in", "Ihren sicheren Ruhestand"];
-}
 
 function monitorIconSvg(kind: "info" | "euro" | "check", color: string): string {
   const monitor = `<rect x="6" y="7" width="36" height="24" rx="2.5" stroke="${color}" stroke-width="2.2" fill="none"/><line x1="18" y1="39" x2="30" y2="39" stroke="${color}" stroke-width="2.2" stroke-linecap="round"/><line x1="24" y1="31" x2="24" y2="39" stroke="${color}" stroke-width="2.2"/>`;
@@ -207,16 +207,19 @@ function renderPage2(config: LetterConfig, recipient: Recipient): string {
   const color = config.designColor;
   const url = escapeHtml(config.beratungslinkUrl);
   const code = formatFreischaltcode(recipient.freischaltcode);
-  const [overlayLine1, overlayLine2] = overlayLines(config.duSieMode);
+  const overlay = config.overlayZeigen
+    ? overlayZeilen(config.overlayText, config.duSieMode)
+    : [];
 
   return `
 <section class="page page2">
   <div class="page2-header">
     <img src="${config.page2PhotoDataUrl}" alt="" />
-    <div class="page2-overlay">
-      <div>${escapeHtml(overlayLine1)}</div>
-      <div>${escapeHtml(overlayLine2)}</div>
-    </div>
+    ${
+      overlay.length > 0
+        ? `<div class="page2-overlay">${overlay.map((z) => `<div>${escapeHtml(z)}</div>`).join("")}</div>`
+        : ""
+    }
   </div>
 
   <div class="page2-body">

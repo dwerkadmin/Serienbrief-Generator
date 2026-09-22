@@ -69,6 +69,8 @@ function buildFormData(state: WizardState): FormData {
   fd.set("photoMode", state.photoMode);
   if (state.photoMode === "upload" && state.photoFile) fd.set("photoFile", state.photoFile);
   if (state.photoMode === "stock") fd.set("stockPhotoId", state.stockPhotoId);
+  fd.set("overlayZeigen", String(state.overlayZeigen));
+  if (state.overlayZeigen) fd.set("overlayText", state.overlayText);
   fd.set("beratungslinkSubdomain", state.beratungslinkSubdomain);
   fd.set("beratungslinkDomain", state.beratungslinkDomain);
   fd.set("beratungQrAktiv", String(state.beratungQrAktiv));

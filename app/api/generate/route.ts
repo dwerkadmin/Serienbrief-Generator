@@ -243,6 +243,12 @@ export async function POST(req: Request) {
   }
 
   // Optionaler zweiter QR-Code am Fuß von Seite 2 (persönliche Beratung).
+  // Schriftzug ueber dem Headerbild: nur ausgeblendet, wenn ausdruecklich
+  // abgewaehlt - aeltere Konfigurationen kennen das Feld nicht und sollen den
+  // Text wie bisher zeigen.
+  const overlayZeigen = form.get("overlayZeigen") !== "false";
+  const overlayText = String(form.get("overlayText") ?? "");
+
   const beratungQrAktiv = form.get("beratungQrAktiv") === "true";
   const beratungQrUeberschrift = String(form.get("beratungQrUeberschrift") ?? "");
   // Kontaktzeile: Vorgabe "an", damit ältere Aufrufe ohne diese Felder sich
@@ -285,6 +291,8 @@ export async function POST(req: Request) {
       dateMonthOffset,
       letterhead,
       page2PhotoDataUrl,
+      overlayZeigen,
+      overlayText,
       duSieMode,
       beratungslinkUrl,
       qrCodeDataUrl,
