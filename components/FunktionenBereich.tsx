@@ -55,7 +55,8 @@ const SCHRITTE: { nr: number; titel: string; punkte: React.ReactNode[] }[] = [
       </>,
       <>
         <b>Formatierung</b> wie in einer Textverarbeitung: fett, kursiv, unterstrichen,
-        Ausrichtung, Überschriften, Aufzählungen, Zeilenabstand.
+        Ausrichtung, Überschriften, Aufzählungen, Zeilenabstand — und Einfärben in der
+        Design-Farbe.
       </>,
       <>
         <b>Überschrift</b> über der Anredezeile, mehrzeilig, in der Design-Farbe.

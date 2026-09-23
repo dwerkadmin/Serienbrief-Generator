@@ -5,6 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import { LineHeight, LINE_HEIGHTS } from "@/lib/tiptap/lineHeight";
+import { Standardfarbe } from "@/lib/tiptap/standardfarbe";
 import { useEffect } from "react";
 
 type Props = {
@@ -13,15 +14,28 @@ type Props = {
   minHeight?: string;
   /** Merge-Felder, die per Klick an der Cursorposition eingefügt werden können */
   mergeFields?: { token: string; label: string }[];
+  /**
+   * Design-Farbe aus Schritt 1. Nur für die Anzeige: die Markierung
+   * "Standardfarbe" schreibt keinen Farbwert in den Text, die Farbe kommt hier
+   * als CSS-Variable dazu (siehe lib/tiptap/standardfarbe.ts).
+   */
+  designColor?: string;
 };
 
-export default function RichTextEditor({ value, onChange, minHeight = "220px", mergeFields }: Props) {
+export default function RichTextEditor({
+  value,
+  onChange,
+  minHeight = "220px",
+  mergeFields,
+  designColor,
+}: Props) {
   const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       LineHeight.configure({ types: ["heading", "paragraph"] }),
+      Standardfarbe,
     ],
     content: value,
     immediatelyRender: false,
@@ -51,7 +65,11 @@ export default function RichTextEditor({ value, onChange, minHeight = "220px", m
     }`;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-300">
+    <div
+      className="overflow-hidden rounded-lg border border-slate-300"
+      // Die Markierung "Standardfarbe" liest die Farbe von hier (globals.css).
+      style={designColor ? ({ "--design-farbe": designColor } as React.CSSProperties) : undefined}
+    >
       <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 p-2">
         <button type="button" className={btnClass(editor.isActive("bold"))} onClick={() => editor.chain().focus().toggleBold().run()} title="Fett">
           <strong>F</strong>
@@ -61,6 +79,19 @@ export default function RichTextEditor({ value, onChange, minHeight = "220px", m
         </button>
         <button type="button" className={btnClass(editor.isActive("underline"))} onClick={() => editor.chain().focus().toggleUnderline().run()} title="Unterstrichen">
           <u>U</u>
+        </button>
+        <button
+          type="button"
+          className={btnClass(editor.isActive("standardfarbe"))}
+          onClick={() => editor.chain().focus().toggleStandardfarbe().run()}
+          title="Markierten Text in der Design-Farbe einfärben"
+        >
+          <span
+            aria-hidden
+            className="inline-block h-3.5 w-3.5 rounded-sm border border-slate-400 align-middle"
+            style={{ background: designColor ?? "#1E6FA6" }}
+          />
+          <span className="sr-only">Standardfarbe</span>
         </button>
         <span className="mx-1 h-5 w-px bg-slate-300" />
         <button type="button" className={btnClass(editor.isActive({ textAlign: "left" }))} onClick={() => editor.chain().focus().setTextAlign("left").run()} title="Linksbündig">

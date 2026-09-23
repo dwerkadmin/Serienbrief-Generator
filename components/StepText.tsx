@@ -148,6 +148,7 @@ export default function StepText({ state, update }: StepProps) {
           onChange={(html) => update({ bodyHtml: html })}
           mergeFields={MERGE_FIELDS}
           minHeight="280px"
+          designColor={state.designColor}
         />
       </div>
 

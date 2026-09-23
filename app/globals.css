@@ -216,3 +216,10 @@ textarea::placeholder {
   font-style: normal;
   font-display: swap;
 }
+
+/* Markierung "Standardfarbe" im Brieftext-Editor. Der Farbwert steht nicht im
+   Text, sondern kommt aus der Design-Farbe von Schritt 1 - RichTextEditor.tsx
+   setzt dafuer --design-farbe. Siehe lib/tiptap/standardfarbe.ts. */
+.letter-editor [data-standardfarbe] {
+  color: var(--design-farbe, #1e6fa6);
+}

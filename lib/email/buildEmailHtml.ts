@@ -159,6 +159,18 @@ function fliesstextAufbereiten(html: string, ciFarbe: string): string {
     }
   );
 
+  // Im Editor als "Standardfarbe" markierter Text trägt nur ein Merkmal, keinen
+  // Farbwert (siehe lib/tiptap/standardfarbe.ts). In der PDF genügt dafür eine
+  // Regel im Stylesheet - hier muss die Farbe ins Element selbst, weil
+  // E-Mail-Programme <style>-Regeln verwerfen.
+  ergebnis = ergebnis.replace(
+    /<span\b([^>]*\bdata-standardfarbe\b[^>]*)>/gi,
+    (_treffer, attribute: string) =>
+      /\sstyle\s*=\s*"/i.test(attribute)
+        ? `<span${attribute.replace(/\sstyle\s*=\s*"/i, ` style="color:${ciFarbe};`)}>`
+        : `<span${attribute} style="color:${ciFarbe};">`
+  );
+
   // Der Editor verpackt Listeninhalte zusätzlich in <p>. Deren Absatzabstand
   // würde die Aufzählung unnötig auseinanderziehen.
   ergebnis = ergebnis.replace(/<li\b[^>]*>[\s\S]*?<\/li>/gi, (block) =>

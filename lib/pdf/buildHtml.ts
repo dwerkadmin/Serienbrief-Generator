@@ -425,6 +425,11 @@ export function buildFullHtml(
   .letter-body li { margin-bottom: 0; }
   .letter-body li p { margin: 0; }
   .letter-body svg { max-width: 100%; }
+  /* Im Editor als "Standardfarbe" markierter Text. Der Farbwert steht bewusst
+     nicht im Brieftext, sondern kommt hier aus der Design-Farbe dazu - so folgt
+     einmal gefärbter Text einer späteren Änderung der Hausfarbe.
+     Siehe lib/tiptap/standardfarbe.ts. */
+  .letter-body [data-standardfarbe] { color: ${config.designColor}; }
 
   /* --- Seite 2 --- */
   .page2 { display: flex; flex-direction: column; }
