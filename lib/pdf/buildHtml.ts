@@ -4,6 +4,7 @@ import { buildAbsenderzeile } from "@/lib/absenderzeile";
 import { buildBeitragsgrafikSvg, parseGermanDecimal } from "@/lib/beitragsgrafik";
 import { getFont } from "@/lib/fonts";
 import { overlayZeilen } from "@/lib/seite2Overlay";
+import { seite2Texte } from "@/lib/seite2Texte";
 
 export type LogoPosition = "left" | "center" | "right";
 export type DuSieMode = "du" | "sie";
@@ -210,6 +211,7 @@ function renderPage2(config: LetterConfig, recipient: Recipient): string {
   const overlay = config.overlayZeigen
     ? overlayZeilen(config.overlayText, config.duSieMode)
     : [];
+  const t = seite2Texte(config.duSieMode);
 
   return `
 <section class="page page2">
@@ -229,12 +231,12 @@ function renderPage2(config: LetterConfig, recipient: Recipient): string {
       <div class="p2-col">
         <span class="p2-pill" style="background:${color}">1a</span>
         <strong class="p2-col-title">Starten des Prozesses per Browser</strong>
-        <p>Um den Beratungsprozess zu starten, geben Sie bitte in der Adresszeile Ihres Internetbrowsers folgende Adresse ein: <span class="p2-link" style="color:${color}">${url}</span></p>
+        <p>${escapeHtml(t.browserHinweis)} <span class="p2-link" style="color:${color}">${url}</span></p>
       </div>
       <div class="p2-col">
         <span class="p2-pill" style="background:${color}">1b</span>
         <strong class="p2-col-title">Oder mit Hilfe des QR-Codes</strong>
-        <p>Scannen Sie den QR-Code und lassen Sie sich auf Ihrem Smartphone beraten:</p>
+        <p>${escapeHtml(t.qrHinweis)}</p>
       </div>
       <div class="p2-qr">
         <img src="${config.qrCodeDataUrl}" alt="QR-Code" />
@@ -243,7 +245,7 @@ function renderPage2(config: LetterConfig, recipient: Recipient): string {
 
     <div class="p2-divider" style="border-color:${color}">
       <span class="p2-info-pill" style="background:${color}">i</span>
-      <span class="p2-info-text">Bitte nutzen Sie für eine optimale Verwendung eine aktuelle Browserversion und ein akt. Betriebssystem</span>
+      <span class="p2-info-text">${escapeHtml(t.systemHinweis)}</span>
     </div>
 
     <div class="p2-step">
@@ -251,7 +253,7 @@ function renderPage2(config: LetterConfig, recipient: Recipient): string {
       <div class="p2-connector" style="border-color:${color}"></div>
       <div class="p2-step-body">
         <div><span class="p2-pill p2-pill-inline" style="background:${color}">2.</span><strong>Allgemeine Informationen</strong></div>
-        <p>Nach dem Laden der Webseite können Sie die gewünschte Sprache wählen. Danach begrüßt Sie der Moderator und führt Sie durch die allgemeinen Informationen zur betrieblichen Vorsorge.</p>
+        <p>${escapeHtml(t.schritt2Text)}</p>
       </div>
     </div>
 
@@ -259,11 +261,11 @@ function renderPage2(config: LetterConfig, recipient: Recipient): string {
       <div class="p2-icon">${monitorIconSvg("euro", color)}</div>
       <div class="p2-connector" style="border-color:${color}"></div>
       <div class="p2-step-body">
-        <div><span class="p2-pill p2-pill-inline" style="background:${color}">3.</span><strong>Freischaltung Ihrer persönlichen Berechnung</strong></div>
-        <p>Mit Hilfe Ihres Freischaltcodes gelangen Sie in Ihren persönlichen Bereich. Hier können Sie Ihren Wunschbetrag eingeben und sich Ihre betriebliche Vorsorge individuell berechnen lassen.</p>
+        <div><span class="p2-pill p2-pill-inline" style="background:${color}">3.</span><strong>${escapeHtml(t.schritt3Titel)}</strong></div>
+        <p>${escapeHtml(t.schritt3Text)}</p>
       </div>
       <div class="p2-code-box">
-        <div class="p2-code-label">Ihr persönlicher<br/>Freischaltcode:</div>
+        <div class="p2-code-label">${t.codeLabel}</div>
         <div class="p2-code-value">${escapeHtml(code)}</div>
       </div>
     </div>
@@ -273,7 +275,7 @@ function renderPage2(config: LetterConfig, recipient: Recipient): string {
       <div class="p2-connector" style="border-color:${color}"></div>
       <div class="p2-step-body">
         <div><strong>Unsere Plattform mit drei einfachen Schritten auf jedem Endgerät nutzen</strong></div>
-        <p>Sofern Sie Ihren Wunschbetrag gefunden haben, können Sie direkt durch erneute Eingabe Ihres Freischaltcodes Ihre betriebliche Vorsorge beantragen.</p>
+        <p>${escapeHtml(t.schritt4Text)}</p>
       </div>
     </div>
 ${renderBeraterBlock(config)}

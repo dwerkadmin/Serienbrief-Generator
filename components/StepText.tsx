@@ -249,9 +249,10 @@ export default function StepText({ state, update }: StepProps) {
       <div>
         <label className="mb-1 block text-sm font-medium">Du/Sie-Anrede</label>
         <p className="mb-2 text-xs text-slate-500">
-          Wird für den Overlay-Text auf dem Headerbild von Seite 2 verwendet („In nur drei
-          Schritten in {state.duSieMode === "du" ? "deinen" : "Ihren"} sicheren Ruhestand“). Wird
-          beim Klick auf eine Standardvorlage automatisch passend gesetzt.
+          Gilt für die festen Texte auf Seite 2 — Zugangsdaten, die drei Schritte, der Schriftzug
+          über dem Headerbild und der Beratungsblock. <b>Wird beim Klick auf eine Standardvorlage
+          automatisch passend gesetzt</b>, hier also nur nötig, wenn du mit „Leer beginnen“
+          startest oder bewusst abweichen willst.
         </p>
         <div className="flex gap-2">
           <button
