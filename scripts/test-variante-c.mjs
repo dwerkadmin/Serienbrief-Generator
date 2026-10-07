@@ -23,7 +23,16 @@ import { getStandardText } from "../lib/templates/standardTexts.ts";
 import { parseGermanDecimal } from "../lib/beitragsgrafik.ts";
 
 const BASE = process.env.TEST_BASE_URL ?? "http://localhost:3002";
-const PASSWORD = process.env.TEST_PASSWORD ?? "changeme";
+// Das Kennwort kommt aus .env.local und wird nur durchgereicht - so steht es
+// in keinem Skript und in keiner Befehlszeile. Gegen eine andere Instanz:
+// TEST_BASE_URL und TEST_PASSWORD setzen.
+function appPasswort() {
+  if (process.env.TEST_PASSWORD) return process.env.TEST_PASSWORD;
+  const treffer = fs.readFileSync(".env.local", "utf8").match(/^APP_PASSWORD=(.*)$/m);
+  if (!treffer) throw new Error("APP_PASSWORD steht nicht in .env.local");
+  return treffer[1].trim();
+}
+const PASSWORD = appPasswort();
 const OUT_SUFFIX = process.env.TEST_OUT_SUFFIX ?? "";
 const VARIANT = process.env.TEST_VARIANT ?? "c-du";
 const CSV_PATH = "test-data/beispiel-adressen-beitragsgrafik.csv";

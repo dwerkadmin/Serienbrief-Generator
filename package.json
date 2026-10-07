@@ -19,7 +19,7 @@
     "@tiptap/pm": "^3.31.3",
     "@tiptap/react": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
-    "next": "16.3.4",
+    "next": "^16.4.0",
     "papaparse": "^5.7.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.2.108",
@@ -37,7 +37,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.4",
+    "eslint-config-next": "^16.4.0",
     "puppeteer": "^25.8.0",
     "tailwindcss": "^4",
     "typescript": "^5"
