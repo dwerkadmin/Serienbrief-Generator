@@ -14,7 +14,6 @@ import {
   guessGeschlechtColumn,
   guessMapping,
   parseCsv,
-  splitCsvIntoChunks,
   type AnredeTemplateId,
   type Recipient,
 } from "@/lib/csv/parseAddresses";
@@ -91,36 +90,6 @@ export default function StepAddresses({ state, update }: StepProps) {
     }
   }
 
-  const [splitting, setSplitting] = useState(false);
-
-  async function handleSplitAndDownload() {
-    setSplitting(true);
-    try {
-      const chunks = splitCsvIntoChunks(state.csvHeaders, state.csvRows, MAX_RECIPIENTS);
-      const baseName = (state.csvFile?.name ?? "adressliste").replace(/\.csv$/i, "");
-      const digits = String(chunks.length).length;
-      for (let i = 0; i < chunks.length; i++) {
-        const partNum = String(i + 1).padStart(digits, "0");
-        // UTF-8-BOM voranstellen, damit die Teildatei auch in Excel korrekt aufgeht
-        // (die App selbst erkennt BOM/kein-BOM ohnehin robust, siehe decodeCsvBytes).
-        const blob = new Blob(["﻿" + chunks[i]], { type: "text/csv;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${baseName} - Teil ${partNum} von ${chunks.length}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        // Kurze Pause zwischen den Downloads, sonst blockieren manche Browser
-        // (Chrome/Edge) mehrere schnell aufeinanderfolgende automatische Downloads.
-        if (i < chunks.length - 1) await new Promise((r) => setTimeout(r, 400));
-      }
-    } finally {
-      setSplitting(false);
-    }
-  }
-
   const usesBeitragsgrafik = /\{\{\s*Beitragsgrafik\s*\}\}/.test(state.bodyHtml);
 
   let preview: Recipient[] = [];
@@ -183,24 +152,12 @@ export default function StepAddresses({ state, update }: StepProps) {
           </p>
 
           {state.csvRows.length > MAX_RECIPIENTS && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
-              <p className="text-sm text-amber-800">
-                Diese Liste enthält mehr als {MAX_RECIPIENTS} Empfänger und kann daher nicht in
-                einem Lauf erzeugt werden (Zeitlimit der Plattform). Teile sie hier in mehrere
-                Dateien mit je maximal {MAX_RECIPIENTS} Zeilen auf und lade sie danach nacheinander
-                hier hoch, um mehrere PDF-Dateien zu erzeugen.
-              </p>
-              <button
-                type="button"
-                onClick={handleSplitAndDownload}
-                disabled={splitting}
-                className="mt-3 rounded-lg border border-amber-400 bg-white px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
-              >
-                {splitting
-                  ? "Erzeuge Teildateien…"
-                  : `In ${Math.ceil(state.csvRows.length / MAX_RECIPIENTS)} Dateien aufteilen & herunterladen`}
-              </button>
-            </div>
+            <p className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+              Die Liste wird in {Math.ceil(state.csvRows.length / MAX_RECIPIENTS)} Paketen zu je
+              höchstens {MAX_RECIPIENTS} Empfängern erzeugt und am Ende zu{" "}
+              <b>einer PDF</b> zusammengefügt. Du musst nichts aufteilen — lass das Fenster
+              währenddessen nur offen.
+            </p>
           )}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

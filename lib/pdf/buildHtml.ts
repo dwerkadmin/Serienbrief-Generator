@@ -142,7 +142,7 @@ function monitorIconSvg(kind: "info" | "euro" | "check", color: string): string 
 
 function letterheadStyleAndMarkup(letterhead: LetterheadConfig): string {
   if (letterhead.mode === "image") {
-    return `<div class="letterhead-bg" style="background-image:url('${letterhead.dataUrl}')"></div>`;
+    return `<div class="letterhead-bg"></div>`;
   }
   const justify =
     letterhead.position === "left"
@@ -150,7 +150,7 @@ function letterheadStyleAndMarkup(letterhead: LetterheadConfig): string {
       : letterhead.position === "right"
         ? "flex-end"
         : "center";
-  return `<div class="logo-header" style="justify-content:${justify}"><img src="${letterhead.dataUrl}" alt="Logo" /></div>`;
+  return `<div class="logo-header" style="justify-content:${justify}"><div class="logo-bild"></div></div>`;
 }
 
 function renderHeadline(config: LetterConfig): string {
@@ -216,7 +216,7 @@ function renderPage2(config: LetterConfig, recipient: Recipient): string {
   return `
 <section class="page page2">
   <div class="page2-header">
-    <img src="${config.page2PhotoDataUrl}" alt="" />
+    <div class="page2-foto"></div>
     ${
       overlay.length > 0
         ? `<div class="page2-overlay">${overlay.map((z) => `<div>${escapeHtml(z)}</div>`).join("")}</div>`
@@ -239,7 +239,7 @@ function renderPage2(config: LetterConfig, recipient: Recipient): string {
         <p>${escapeHtml(t.qrHinweis)}</p>
       </div>
       <div class="p2-qr">
-        <img src="${config.qrCodeDataUrl}" alt="QR-Code" />
+        <div class="p2-qr-bild"></div>
       </div>
     </div>
 
@@ -319,8 +319,48 @@ function renderBeraterBlock(config: LetterConfig): string {
         <p>${escapeHtml(text)}</p>
         ${kontakt ? `<p class="p2-berater-kontakt">${kontakt}</p>` : ""}
       </div>
-      <img class="p2-berater-qr" src="${config.beratungQrDataUrl}" alt="QR-Code persönliche Beratung" />
+      <div class="p2-berater-qr"></div>
     </div>`;
+}
+
+/**
+ * Die Bilder, die für ALLE Empfänger dieselben sind: Briefbogen bzw. Logo,
+ * Headerfoto von Seite 2 und die beiden QR-Codes.
+ *
+ * Sie stehen hier genau einmal im Dokument, als Hintergrundbild einer
+ * CSS-Klasse. Vorher trug jede Seite ihre eigene Kopie als data:-URI im
+ * Markup - bei 300 Empfängern waren das rund 140 MB HTML, nur aus immer
+ * demselben Foto und Logo. So viel Text nimmt Chromium nicht mehr an: der
+ * Renderer stirbt beim Laden, und die Erzeugung bricht mit "Target closed" ab.
+ * Seit die Bilder einmalig hier stehen, ist das HTML praktisch leer an Daten
+ * und die Seitenzahl nahezu beliebig.
+ *
+ * Das Logo wird an der vom Nutzer gewählten Kante ausgerichtet - als
+ * Hintergrundbild füllt es sonst mittig eine feste Box und läge nicht mehr dort,
+ * wo es bei "oben links" liegen soll.
+ */
+function geteilteBilderCss(config: LetterConfig): string {
+  const logoPosition =
+    config.letterhead.mode === "logo"
+      ? config.letterhead.position === "right"
+        ? "right center"
+        : config.letterhead.position === "center"
+          ? "center"
+          : "left center"
+      : "left center";
+
+  const regeln = [
+    config.letterhead.mode === "image"
+      ? `.letterhead-bg { background-image: url('${config.letterhead.dataUrl}'); }`
+      : `.logo-bild { background-image: url('${config.letterhead.dataUrl}'); background-position: ${logoPosition}; }`,
+    `.page2-foto { background-image: url('${config.page2PhotoDataUrl}'); }`,
+    `.p2-qr-bild { background-image: url('${config.qrCodeDataUrl}'); }`,
+    config.beratungQrDataUrl
+      ? `.p2-berater-qr { background-image: url('${config.beratungQrDataUrl}'); }`
+      : "",
+  ];
+
+  return regeln.filter((r) => r !== "").join("\n");
 }
 
 export function buildFullHtml(
@@ -377,7 +417,15 @@ export function buildFullHtml(
     align-items: center;
     padding: 5mm 20mm 0 20mm;
   }
-  .logo-header img { max-height: 22mm; max-width: 60mm; object-fit: contain; }
+  /* Das Logo liegt als Hintergrundbild vor (siehe geteilteBilderCss): "contain"
+     entspricht dem frueheren object-fit, die Position haelt es an der vom
+     Nutzer gewaehlten Kante statt es in der 60-mm-Box zu zentrieren. */
+  .logo-bild {
+    height: 22mm;
+    width: 60mm;
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
 
   .absenderzeile {
     position: absolute;
@@ -443,7 +491,13 @@ export function buildFullHtml(
     background: #f2f2f2;
     flex-shrink: 0;
   }
-  .page2-header img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .page2-foto {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
   .page2-overlay {
     position: absolute;
     left: 12mm;
@@ -479,7 +533,13 @@ export function buildFullHtml(
   .p2-col p { margin: 0; }
   .p2-link { font-weight: 600; overflow-wrap: anywhere; word-break: normal; font-size: 0.95em; }
   .p2-qr { flex-shrink: 0; width: 19mm; height: 19mm; align-self: center; }
-  .p2-qr img { width: 100%; height: 100%; object-fit: contain; }
+  .p2-qr-bild {
+    width: 100%;
+    height: 100%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
 
   .p2-divider {
     position: relative;
@@ -546,7 +606,11 @@ export function buildFullHtml(
     width: 24mm;
     height: 24mm;
     background: #fff;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
   }
+${geteilteBilderCss(config)}
 </style>
 </head>
 <body>

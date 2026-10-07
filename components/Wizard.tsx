@@ -11,7 +11,8 @@ import FileUploadButton from "./FileUploadButton";
 import FunktionenBereich from "./FunktionenBereich";
 import InfoBereich from "./InfoBereich";
 import Impressum from "./Impressum";
-import { applyMapping } from "@/lib/csv/parseAddresses";
+import { applyMapping, buildCsv, MAX_RECIPIENTS, teileInPakete } from "@/lib/csv/parseAddresses";
+import { fuegePdfsZusammen } from "@/lib/pdf/mergePdfs";
 import { buildConfigExport, parseConfigImport } from "@/lib/configExport";
 import { CUSTOM_FONT_ID } from "@/lib/fonts";
 import { istBeratungQrUrlGueltig } from "@/lib/beratungQr";
@@ -30,7 +31,12 @@ const PDF_SCHRITTE = 4;
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
-function buildFormData(state: WizardState): FormData {
+/**
+ * Baut die Anfrage für EIN Paket. Die Adressliste geht nicht als hochgeladene
+ * Datei hinaus, sondern als CSV aus genau den Zeilen dieses Pakets - mit
+ * Semikolon als Trenner (siehe buildCsv).
+ */
+function buildFormData(state: WizardState, paket: Record<string, string>[]): FormData {
   const fd = new FormData();
   // "logoUrl" ist nur eine client-seitige Auswahl (siehe wizardTypes.ts) - fürs
   // Backend ist ein per Webseite geholtes Logo identisch zu einem hochgeladenen.
@@ -82,7 +88,8 @@ function buildFormData(state: WizardState): FormData {
     fd.set("beratungQrKontaktEmail", String(state.beratungQrKontaktEmail));
   }
 
-  if (state.csvFile) fd.set("csvFile", state.csvFile);
+  const csv = buildCsv(state.csvHeaders, paket);
+  fd.set("csvFile", new Blob([csv], { type: "text/csv" }), state.csvFile?.name ?? "adressliste.csv");
   fd.set("mapping", JSON.stringify(state.mapping));
   fd.set("anredezeileConfig", JSON.stringify(state.anredezeileConfig));
 
@@ -95,6 +102,10 @@ export default function Wizard() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<number | null>(null);
+  /** Nur gesetzt, solange eine Liste in mehreren Paketen laeuft. */
+  const [fortschritt, setFortschritt] = useState<
+    { phase: "erzeugen" | "zusammenfuegen"; fertig: number; gesamt: number } | null
+  >(null);
   const [configMessage, setConfigMessage] = useState<string | null>(null);
   // Zielknoten in der Kopfleiste (siehe AppHeader). Er steht schon im vom Server
   // gelieferten HTML, existiert beim Rendern auf dem Server aber nicht - daher
@@ -220,14 +231,38 @@ export default function Wizard() {
     setSubmitting(true);
     setError(null);
     setDone(null);
+
+    // Lange Listen laufen in Paketen: eine Anfrage je MAX_RECIPIENTS Empfaenger,
+    // am Ende werden die Teil-PDFs im Browser zu einer Datei zusammengefuegt.
+    // Der Zuschnitt passiert hier im Arbeitsspeicher - es entstehen keine
+    // Teildateien, die jemand von Hand wieder hochladen muesste.
+    const pakete = teileInPakete(state.csvRows, MAX_RECIPIENTS);
+    setFortschritt(pakete.length > 1 ? { phase: "erzeugen", fertig: 0, gesamt: pakete.length } : null);
+
     try {
-      const res = await fetch("/api/generate", { method: "POST", body: buildFormData(state) });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        setError(data?.error ?? `Fehler beim Erstellen (Status ${res.status}).`);
-        return;
+      const teile: ArrayBuffer[] = [];
+      for (let i = 0; i < pakete.length; i++) {
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          body: buildFormData(state, pakete[i]),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          const wo =
+            pakete.length > 1
+              ? ` (Paket ${i + 1} von ${pakete.length}, Empfaenger ${i * MAX_RECIPIENTS + 1} bis ${i * MAX_RECIPIENTS + pakete[i].length})`
+              : "";
+          setError((data?.error ?? `Fehler beim Erstellen (Status ${res.status}).`) + wo);
+          return;
+        }
+        teile.push(await res.arrayBuffer());
+        if (pakete.length > 1) setFortschritt({ phase: "erzeugen", fertig: i + 1, gesamt: pakete.length });
       }
-      const blob = await res.blob();
+
+      const zusammengefuegt = await fuegePdfsZusammen(teile, (fertig, gesamt) =>
+        setFortschritt({ phase: "zusammenfuegen", fertig, gesamt })
+      );
+      const blob = new Blob([zusammengefuegt as unknown as BlobPart], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -241,6 +276,7 @@ export default function Wizard() {
       setError("Netzwerkfehler beim Erstellen der PDF. Bitte erneut versuchen.");
     } finally {
       setSubmitting(false);
+      setFortschritt(null);
     }
   }
 
@@ -301,6 +337,23 @@ export default function Wizard() {
         {step === 5 && <StepEmail state={state} update={update} />}
       </div>
 
+      {submitting && fortschritt && (
+        <div className="mt-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+          <p className="mb-2 text-sm text-sky-900">
+            {fortschritt.phase === "erzeugen"
+              ? `Erzeuge Paket ${Math.min(fortschritt.fertig + 1, fortschritt.gesamt)} von ${fortschritt.gesamt}`
+              : `Füge zusammen: ${fortschritt.fertig} von ${fortschritt.gesamt} Paketen`}{" "}
+            — bitte das Fenster offen lassen. Am Ende entsteht eine einzige PDF.
+          </p>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-sky-100">
+            <div
+              className="h-full rounded-full bg-sky-600 transition-all"
+              style={{ width: `${(fortschritt.fertig / fortschritt.gesamt) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -351,7 +404,13 @@ export default function Wizard() {
                 disabled={submitting}
                 className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
               >
-                {submitting ? "Erstelle PDF…" : "Serienbriefe erstellen"}
+                {!submitting
+                  ? "Serienbriefe erstellen"
+                  : fortschritt
+                    ? fortschritt.phase === "erzeugen"
+                      ? `Paket ${Math.min(fortschritt.fertig + 1, fortschritt.gesamt)} von ${fortschritt.gesamt}…`
+                      : "Füge zusammen…"
+                    : "Erstelle PDF…"}
               </button>
             </>
           )}

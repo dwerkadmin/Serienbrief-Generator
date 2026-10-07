@@ -211,21 +211,23 @@ export function parseCsv(text: string): ParsedCsv {
 }
 
 /**
- * Teilt eine zu lange Adressliste in mehrere kleinere CSV-Dateien mit je
- * maximal `chunkSize` Zeilen auf (gleiche Kopfzeile je Teil) - für den Fall,
- * dass eine Liste MAX_RECIPIENTS überschreitet und der Nutzer sie in mehreren
- * Läufen abarbeiten möchte (siehe StepAddresses.tsx).
+ * Schreibt gelesene Zeilen wieder als CSV - für die Pakete, in denen eine lange
+ * Adressliste an die Erzeugung geht (siehe Wizard.tsx).
+ *
+ * Der Trenner steht hier ausdrücklich auf Semikolon. Ohne die Angabe nimmt
+ * Papa.unparse Komma, und genau daran scheiterten früher die Teildateien: die
+ * dCRYPT-Exporte kommen mit Semikolon, die erzeugten Teile hatten plötzlich
+ * Komma - mit Beträgen wie "50,00" darin, die dadurch zu zwei Spalten wurden.
  */
-export function splitCsvIntoChunks(
-  headers: string[],
-  rows: Record<string, string>[],
-  chunkSize: number = MAX_RECIPIENTS
-): string[] {
-  const chunks: string[] = [];
-  for (let i = 0; i < rows.length; i += chunkSize) {
-    chunks.push(Papa.unparse({ fields: headers, data: rows.slice(i, i + chunkSize) }));
-  }
-  return chunks;
+export function buildCsv(headers: string[], rows: Record<string, string>[]): string {
+  return Papa.unparse({ fields: headers, data: rows }, { delimiter: ";" });
+}
+
+/** Zerlegt die Zeilen in Pakete von je höchstens `groesse` Stück. */
+export function teileInPakete<T>(zeilen: T[], groesse: number = MAX_RECIPIENTS): T[][] {
+  const pakete: T[][] = [];
+  for (let i = 0; i < zeilen.length; i += groesse) pakete.push(zeilen.slice(i, i + groesse));
+  return pakete;
 }
 
 /** Normalisiert einen Spaltennamen für den Best-Effort-Abgleich (Umlaute/ß einrechnen, Rest verwerfen). */
