@@ -8,7 +8,17 @@ import { plzForm } from "@/lib/csv/staat";
  * Warnung + Aufteilen-Funktion) und Server (route.ts, harte Prüfung)
  * garantiert denselben Wert verwenden.
  */
-export const MAX_RECIPIENTS = 300;
+/**
+ * Empfänger je Anfrage. Lange Listen werden clientseitig in so große Pakete
+ * zerlegt und am Ende zu einer PDF zusammengefügt (siehe Wizard.tsx).
+ *
+ * Die Grenze zieht nicht der Arbeitsspeicher, sondern Cloudflare: eine Anfrage
+ * muss in rund 100 Sekunden beantwortet sein. Wie lange ein Empfänger dauert,
+ * hängt stark an der Kampagne - mit bloßem Logo rund 30 ms, mit einem als PDF
+ * hochgeladenen Briefbogen (ganzseitiges Hintergrundbild auf jeder Seite 1)
+ * eher 140 ms. 150 Empfänger bleiben auch im teuren Fall deutlich darunter.
+ */
+export const MAX_RECIPIENTS = 150;
 
 /**
  * Dekodiert eine CSV-Datei robust zu Text - unabhängig davon, ob sie als

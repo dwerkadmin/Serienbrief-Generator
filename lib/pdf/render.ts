@@ -36,17 +36,34 @@ async function getBrowser(): Promise<Browser> {
   }) as unknown as Browser;
 }
 
+/**
+ * Zeitlimit für die einzelnen Chromium-Befehle.
+ *
+ * Puppeteers Vorgabe sind 30 Sekunden - zu wenig für ein ganzes Paket. Ein
+ * Briefbogen, der als PDF hochgeladen und zu einem ganzseitigen Hintergrundbild
+ * wird, kostet rund 140 ms je Empfänger statt der 30 ms einer Seite mit bloßem
+ * Logo; ein Paket lief damit in den Abbruch ("Timed out after waiting 30000ms"),
+ * obwohl nichts kaputt war.
+ *
+ * 120 Sekunden sind großzügig gewählt und trotzdem unterhalb des nginx-Limits
+ * (300 s). Die eigentliche Grenze zieht ohnehin die Paketgröße: ein Paket soll
+ * deutlich unter Cloudflares rund 100 Sekunden bleiben (siehe MAX_RECIPIENTS).
+ */
+const CHROMIUM_ZEITLIMIT_MS = 120_000;
+
 /** Rendert ein komplettes HTML-Dokument (alle Empfänger, alle Seiten) zu einer einzigen PDF. */
 export async function renderHtmlToPdf(html: string): Promise<Buffer> {
   const browser = await getBrowser();
   try {
     const page = await browser.newPage();
+    page.setDefaultTimeout(CHROMIUM_ZEITLIMIT_MS);
     // Alle Ressourcen (Schriften, Bilder) sind als data:-URIs inline eingebettet,
     // daher genügt "load" - kein externer Netzwerk-Traffic zu erwarten.
-    await page.setContent(html, { waitUntil: "load" });
+    await page.setContent(html, { waitUntil: "load", timeout: CHROMIUM_ZEITLIMIT_MS });
     const pdf = await page.pdf({
       printBackground: true,
       preferCSSPageSize: true,
+      timeout: CHROMIUM_ZEITLIMIT_MS,
     });
     return Buffer.from(pdf);
   } finally {

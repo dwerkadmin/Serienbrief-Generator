@@ -13,6 +13,7 @@ import {
 } from "@/lib/csv/parseAddresses";
 import { buildCustomFontFaceCss, buildFontFaceCss, CUSTOM_FONT_ID } from "@/lib/fonts";
 import { buildFullHtml, type DuSieMode, type LetterheadConfig } from "@/lib/pdf/buildHtml";
+import { verkleinereFuerDruck, verkleinereKopfbild } from "@/lib/pdf/bildVerkleinern";
 import { renderFirstPdfPageToPng } from "@/lib/pdf/letterheadToImage";
 import { renderHtmlToPdf } from "@/lib/pdf/render";
 import { generateQrDataUrl } from "@/lib/qr";
@@ -32,6 +33,24 @@ function err(message: string, status = 400) {
 async function fileToDataUrl(file: File): Promise<string> {
   const buf = Buffer.from(await file.arrayBuffer());
   return `data:${file.type};base64,${buf.toString("base64")}`;
+}
+
+/**
+ * Wie fileToDataUrl, aber für Bilder, die als ganzseitiger Hintergrund auf
+ * jeder Seite landen (Briefbogen, Headerfoto). Zu große Bilder kosten pro Seite
+ * Rechenzeit - siehe lib/pdf/bildVerkleinern.ts.
+ */
+async function bildAlsDataUrlFuerDruck(file: File): Promise<string> {
+  const buf = Buffer.from(await file.arrayBuffer());
+  try {
+    const { daten, mimeTyp, verkleinert } = await verkleinereFuerDruck(buf);
+    const typ = verkleinert ? mimeTyp : file.type;
+    return `data:${typ};base64,${daten.toString("base64")}`;
+  } catch {
+    // Lieber das Original nehmen als die Erzeugung an einem Bild scheitern
+    // lassen, das sich nicht öffnen ließ.
+    return `data:${file.type};base64,${buf.toString("base64")}`;
+  }
 }
 
 async function resolveLetterhead(form: FormData): Promise<LetterheadConfig | { error: string }> {
@@ -69,7 +88,7 @@ async function resolveLetterhead(form: FormData): Promise<LetterheadConfig | { e
       }
     }
     if (SUPPORTED_IMAGE_TYPES.has(letterhead.type)) {
-      return { mode: "image", dataUrl: await fileToDataUrl(letterhead) };
+      return { mode: "image", dataUrl: await bildAlsDataUrlFuerDruck(letterhead) };
     }
     return {
       error:
@@ -90,7 +109,16 @@ async function resolvePage2Photo(form: FormData): Promise<string | { error: stri
     if (!SUPPORTED_IMAGE_TYPES.has(photo.type)) {
       return { error: "Headerfoto muss PNG, JPEG oder WebP sein." };
     }
-    return fileToDataUrl(photo);
+    // Headerfoto auf genau den Kasten bringen, in dem es landet - siehe
+    // verkleinereKopfbild. Spart Rechenzeit auf jeder zweiten Seite.
+    const buf = Buffer.from(await photo.arrayBuffer());
+    try {
+      const klein = await verkleinereKopfbild(buf);
+      if (klein) return `data:${klein.mimeTyp};base64,${klein.daten.toString("base64")}`;
+    } catch {
+      // Bild liess sich nicht oeffnen - unveraendert weiterreichen.
+    }
+    return `data:${photo.type};base64,${buf.toString("base64")}`;
   }
   if (mode === "stock") {
     const id = String(form.get("stockPhotoId") ?? "");
