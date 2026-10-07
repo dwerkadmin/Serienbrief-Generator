@@ -201,6 +201,12 @@ function renderPage1(config: LetterConfig, recipient: Recipient, dateText: strin
     <div>${escapeHtml(recipient.vorname)} ${escapeHtml(recipient.nachname)}</div>
     <div>${escapeHtml(recipient.strasse)}</div>
     <div><span class="plz">${escapeHtml(recipient.plz)}</span> <span class="ort">${escapeHtml(recipient.ort)}</span></div>
+    ${
+      // Auslandsanschrift: Staat als eigene letzte Zeile in Grossbuchstaben
+      // (DIN 5008). Bei Inlandsanschriften bleibt die Zeile weg - dort gehoert
+      // schlicht kein Staat hin.
+      recipient.staat ? `<div class="staat">${escapeHtml(recipient.staat)}</div>` : ""
+    }
   </div>
   ${date}
   <div class="letter-body">
@@ -461,6 +467,9 @@ export function buildFullHtml(
     font-size: ${config.fontSizePt + 1}pt;
     line-height: 1.35;
   }
+  /* Staat bei Auslandsanschriften - etwas abgesetzt und in Grossbuchstaben,
+     damit er beim Sortieren sofort ins Auge faellt (DIN 5008). */
+  .address-block .staat { margin-top: 1mm; font-weight: 700; letter-spacing: 0.3pt; }
   .page1-date {
     position: absolute;
     top: 88mm;

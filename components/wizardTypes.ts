@@ -118,6 +118,12 @@ export type WizardState = {
   csvRows: Record<string, string>[];
   mapping: ColumnMapping;
   anredezeileConfig: AnredezeileConfig;
+  /**
+   * Staat je PLZ-Form fuer den Anschriftenblock - Schluessel ist der
+   * Formschluessel aus plzForm() (siehe lib/csv/staat.ts). Leer oder fehlend
+   * heisst Inland, dann steht kein Staat im Brief.
+   */
+  staatProForm: Record<string, string>;
 };
 
 const initialStandardText = getStandardText("j-sie");
@@ -183,6 +189,7 @@ export const initialWizardState: WizardState = {
   csvRows: [],
   mapping: {},
   anredezeileConfig: { mode: "column", column: "" },
+  staatProForm: {},
 };
 
 export type StepProps = {

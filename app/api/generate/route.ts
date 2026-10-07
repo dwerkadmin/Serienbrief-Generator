@@ -211,6 +211,25 @@ export async function POST(req: Request) {
     return err("Spalten-Zuordnung ist ungültig.");
   }
 
+  // Seite 2 mit persoenlichen Zugangsdaten statt allgemeiner Informationen.
+  // Standard ist aus - aeltere Konfigurationen und Aufrufe ohne das Feld sollen
+  // die Seite unveraendert bekommen.
+  const zugangsdatenZeigen = form.get("zugangsdatenZeigen") === "true";
+
+  // Staat je PLZ-Form (siehe lib/csv/staat.ts). Fehlt die Angabe, bleiben alle
+  // Anschriften ohne Staatszeile - also wie bisher.
+  let staatProForm: Record<string, string> = {};
+  try {
+    const roh: unknown = JSON.parse(String(form.get("staatProForm") ?? "{}"));
+    if (roh && typeof roh === "object" && !Array.isArray(roh)) {
+      for (const [k, v] of Object.entries(roh as Record<string, unknown>)) {
+        if (typeof v === "string" && v.trim() !== "") staatProForm[k] = v.trim().toUpperCase();
+      }
+    }
+  } catch {
+    staatProForm = {};
+  }
+
   let recipients;
   try {
     const csvText = decodeCsvBytes(new Uint8Array(await csvFile.arrayBuffer()));
@@ -218,6 +237,8 @@ export async function POST(req: Request) {
     recipients = applyMapping(rows, mapping, anredezeileConfig, {
       requireEmployerFields: absenderAusCsv,
       requireChartFields: /\{\{\s*Beitragsgrafik\s*\}\}/.test(bodyHtml),
+      requireLoginFields: zugangsdatenZeigen,
+      staatProForm,
     });
   } catch (e) {
     return err(e instanceof Error ? e.message : "CSV konnte nicht verarbeitet werden.");
@@ -246,11 +267,6 @@ export async function POST(req: Request) {
   // Schriftzug ueber dem Headerbild: nur ausgeblendet, wenn ausdruecklich
   // abgewaehlt - aeltere Konfigurationen kennen das Feld nicht und sollen den
   // Text wie bisher zeigen.
-  // Seite 2 mit persoenlichen Zugangsdaten statt allgemeiner Informationen.
-  // Standard ist aus - aeltere Konfigurationen und Aufrufe ohne das Feld sollen
-  // die Seite unveraendert bekommen.
-  const zugangsdatenZeigen = form.get("zugangsdatenZeigen") === "true";
-
   const overlayZeigen = form.get("overlayZeigen") !== "false";
   const overlayText = String(form.get("overlayText") ?? "");
 

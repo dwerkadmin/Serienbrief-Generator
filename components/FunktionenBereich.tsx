@@ -115,6 +115,11 @@ const SCHRITTE: { nr: number; titel: string; punkte: React.ReactNode[] }[] = [
         [Vorname],“ oder „Liebe:r [Vorname] [Nachname],“.
       </>,
       <>
+        <b>Auslandsanschriften</b>: Enthält die Liste Postleitzahlen in fremdem Format, erkennt
+        der Generator die Form, schlägt den Staat vor und druckt ihn in Großbuchstaben als letzte
+        Zeile der Anschrift. Bestätigt wird je Form einmal, nicht je Empfänger.
+      </>,
+      <>
         <b>Geschlechtergerechte Anrede</b>: enthält die Liste eine Spalte „Geschlecht“, wird aus
         „Liebe:r“ je Empfänger „Lieber“ oder „Liebe“. Ohne Angabe bleibt es beim neutralen
         „Liebe:r“.

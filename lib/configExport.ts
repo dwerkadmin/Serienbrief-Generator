@@ -82,6 +82,7 @@ type ExportedConfig = {
 
   mapping: WizardState["mapping"];
   anredezeileConfig: WizardState["anredezeileConfig"];
+  staatProForm?: WizardState["staatProForm"];
 };
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -165,6 +166,7 @@ export async function buildConfigExport(state: WizardState): Promise<string> {
 
     mapping: state.mapping,
     anredezeileConfig: state.anredezeileConfig,
+    staatProForm: state.staatProForm,
   };
 
   return JSON.stringify(
@@ -248,5 +250,6 @@ export function parseConfigImport(jsonText: string): Partial<WizardState> {
 
     mapping: config.mapping,
     anredezeileConfig: config.anredezeileConfig,
+    staatProForm: config.staatProForm ?? {},
   };
 }

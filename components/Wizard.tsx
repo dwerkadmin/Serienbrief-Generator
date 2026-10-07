@@ -93,6 +93,7 @@ function buildFormData(state: WizardState, paket: Record<string, string>[]): For
   fd.set("csvFile", new Blob([csv], { type: "text/csv" }), state.csvFile?.name ?? "adressliste.csv");
   fd.set("mapping", JSON.stringify(state.mapping));
   fd.set("anredezeileConfig", JSON.stringify(state.anredezeileConfig));
+  fd.set("staatProForm", JSON.stringify(state.staatProForm));
 
   return fd;
 }

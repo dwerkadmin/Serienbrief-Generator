@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { buildAbsenderzeile } from "@/lib/absenderzeile";
 import {
   ANREDE_TEMPLATES,
@@ -18,6 +18,7 @@ import {
   type AnredeTemplateId,
   type Recipient,
 } from "@/lib/csv/parseAddresses";
+import { STAAT_AUSWAHL, plzGruppen } from "@/lib/csv/staat";
 import FileUploadButton from "./FileUploadButton";
 import type { StepProps } from "./wizardTypes";
 
@@ -36,11 +37,22 @@ export default function StepAddresses({ state, update }: StepProps) {
   ) {
     const guessedColumn = guessAnredezeileColumn(headers);
     const guessedGeschlecht = guessGeschlechtColumn(headers) ?? "";
+
+    // Staat je PLZ-Form vorbelegen, soweit die Form eindeutig ist. Steht in der
+    // Maske zur Bestaetigung, wird also nicht still entschieden.
+    const mapping = guessMapping(headers);
+    const staatProForm: Record<string, string> = {};
+    if (mapping.plz) {
+      for (const g of plzGruppen(rows.map((r) => r[mapping.plz!] ?? ""))) {
+        staatProForm[g.form] = g.vorschlag;
+      }
+    }
     update({
       csvFile: file,
       csvHeaders: headers,
       csvRows: rows,
-      mapping: guessMapping(headers),
+      mapping,
+      staatProForm,
       anredezeileConfig: opts?.forceAutoTemplate
         ? { mode: "auto", template: opts.forceAutoTemplate, geschlechtSpalte: guessedGeschlecht }
         : guessedColumn
@@ -101,6 +113,7 @@ export default function StepAddresses({ state, update }: StepProps) {
         requireEmployerFields: state.absenderAusCsv,
         requireChartFields: usesBeitragsgrafik,
         requireLoginFields: state.zugangsdatenZeigen,
+        staatProForm: state.staatProForm,
       });
     } catch (e) {
       mappingError = e instanceof Error ? e.message : "Zuordnung unvollständig.";
@@ -108,6 +121,26 @@ export default function StepAddresses({ state, update }: StepProps) {
   }
 
   const usingSample = state.csvFile?.name === SAMPLE_CSV_NAME;
+
+  /**
+   * Anschriften, deren Postleitzahl nicht dem deutschen Format entspricht -
+   * gruppiert nach Form. Nur diese werden abgefragt; fünfstellige PLZ gelten als
+   * Inland und bekommen keine Staatszeile.
+   *
+   * Ist eine Staat-Spalte zugeordnet, entfällt die Abfrage: dann gewinnt ohnehin
+   * die Spalte.
+   */
+  /** Staat-Spalte in der Vorschau nur zeigen, wenn es ueberhaupt Ausland gibt. */
+  const zeigeStaat = !!state.mapping.staat || Object.values(state.staatProForm).some((v) => v !== "");
+
+  const auslandsGruppen = useMemo(() => {
+    if (state.mapping.staat) return [];
+    const plzSpalte = state.mapping.plz;
+    if (!plzSpalte || state.csvRows.length === 0) return [];
+    return plzGruppen(state.csvRows.map((r) => r[plzSpalte] ?? "")).filter(
+      (g) => g.form !== "#####"
+    );
+  }, [state.mapping.staat, state.mapping.plz, state.csvRows]);
 
   // Nur im Modus "automatisch generieren" relevant; im Spalten-Modus kommt die
   // Anredezeile fertig aus der CSV und ein Geschlecht wird nicht gebraucht.
@@ -184,6 +217,47 @@ export default function StepAddresses({ state, update }: StepProps) {
               </div>
             ))}
           </div>
+
+          {auslandsGruppen.length > 0 && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+              <label className="mb-1 block text-sm font-medium text-amber-900">
+                Anschriften im Ausland — Staat festlegen
+              </label>
+              <p className="mb-3 text-xs text-amber-800">
+                Die Liste enthält Postleitzahlen, die nicht dem deutschen Format entsprechen. Der
+                Staat steht in keiner Spalte, lässt sich aber an der Form erkennen. Bitte je Form
+                einmal bestätigen — er erscheint dann in Großbuchstaben als letzte Zeile der
+                Anschrift. Bleibt ein Feld leer, wird kein Staat gedruckt.
+              </p>
+              <div className="space-y-2">
+                {auslandsGruppen.map((g) => (
+                  <div key={g.form} className="flex flex-wrap items-center gap-2 text-sm">
+                    <code className="rounded bg-white px-2 py-1 text-xs text-slate-700">
+                      {g.beispiel}
+                    </code>
+                    <span className="text-xs text-slate-600">
+                      {g.anzahl} Empfänger · {g.erklaerung}
+                    </span>
+                    <select
+                      value={state.staatProForm[g.form] ?? ""}
+                      onChange={(e) =>
+                        update({
+                          staatProForm: { ...state.staatProForm, [g.form]: e.target.value },
+                        })
+                      }
+                      className="ml-auto rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+                    >
+                      {STAAT_AUSWAHL.map((land) => (
+                        <option key={land} value={land}>
+                          {land === "" ? "— kein Staat (Inland) —" : land}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {state.zugangsdatenZeigen && (
             <div className="rounded-lg border border-sky-200 bg-sky-50/50 p-4">
@@ -409,6 +483,7 @@ export default function StepAddresses({ state, update }: StepProps) {
                     <th className="px-3 py-2 font-medium">Straße</th>
                     <th className="px-3 py-2 font-medium">PLZ</th>
                     <th className="px-3 py-2 font-medium">Ort</th>
+                    {zeigeStaat && <th className="px-3 py-2 font-medium">Staat</th>}
                     <th className="px-3 py-2 font-medium">Freischaltcode</th>
                     {state.absenderAusCsv && (
                       <th className="px-3 py-2 font-medium">Absenderzeile</th>
@@ -424,6 +499,9 @@ export default function StepAddresses({ state, update }: StepProps) {
                       <td className="px-3 py-2">{r.strasse}</td>
                       <td className="px-3 py-2">{r.plz}</td>
                       <td className="px-3 py-2">{r.ort}</td>
+                      {zeigeStaat && (
+                        <td className="px-3 py-2 font-medium">{r.staat || "—"}</td>
+                      )}
                       <td className="px-3 py-2">{r.freischaltcode}</td>
                       {state.absenderAusCsv && (
                         <td className="px-3 py-2">

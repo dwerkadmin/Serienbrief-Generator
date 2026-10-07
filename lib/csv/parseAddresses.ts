@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { plzForm } from "@/lib/csv/staat";
 
 /**
  * Maximale Empfängerzahl pro Lauf - begrenzt durch das Zeitlimit der
@@ -86,8 +87,19 @@ export const LOGIN_FIELDS: { key: LoginField; label: string; hint: string }[] = 
   { key: "portalpasswort", label: "Passwort", hint: "z.B. Spalte Portalpasswort" },
 ];
 
+// Staat des Empfaengers fuer den Anschriftenblock. Optional: die dCRYPT-Exporte
+// haben keine solche Spalte - dann kommt der Wert ueber die PLZ-Form (siehe
+// lib/csv/staat.ts). Ist eine Spalte zugeordnet, hat sie Vorrang.
+export type StaatField = "staat";
+
+export const STAAT_FIELD: { key: StaatField; label: string; hint: string } = {
+  key: "staat",
+  label: "Staat",
+  hint: "nur falls der Export eine solche Spalte hat",
+};
+
 export type ColumnMapping = Partial<
-  Record<SimpleField | EmployerField | ChartField | LoginField, string>
+  Record<SimpleField | EmployerField | ChartField | LoginField | StaatField, string>
 >;
 
 // Briefanredezeile: entweder aus einer eigenen CSV-Spalte, oder automatisch aus
@@ -196,6 +208,8 @@ export type Recipient = Record<SimpleField, string> &
   Record<ChartField, string> &
   /** Zugangsdaten fürs Portal, leer wenn nicht gemappt (siehe LOGIN_FIELDS) */
   Record<LoginField, string> & {
+    /** Staat in Grossbuchstaben; leer = Inland, dann entfaellt die Zeile. */
+    staat: string;
     anredezeile: string;
     /** komplette Rohzeile, falls weitere Spalten für spätere Erweiterungen gebraucht werden */
     raw: Record<string, string>;
@@ -328,6 +342,11 @@ export function applyMapping(
     requireEmployerFields?: boolean;
     requireChartFields?: boolean;
     requireLoginFields?: boolean;
+    /**
+     * Staat je PLZ-Form, wenn keine Staat-Spalte zugeordnet ist. Schluessel ist
+     * der Formschluessel aus plzForm() (siehe lib/csv/staat.ts).
+     */
+    staatProForm?: Record<string, string>;
   }
 ): Recipient[] {
   const missing = SIMPLE_FIELDS.filter((f) => !mapping[f.key]);
@@ -388,6 +407,15 @@ export function applyMapping(
       const header = mapping[field.key];
       rec[field.key] = header ? (row[header] ?? "").trim() : "";
     }
+
+    // Eine zugeordnete Spalte gewinnt; sonst gilt, was fuer diese PLZ-Form
+    // eingestellt wurde. Leer heisst Inland - dann steht kein Staat im Brief.
+    const ausSpalte = mapping.staat ? (row[mapping.staat] ?? "").trim() : "";
+    rec.staat = (
+      ausSpalte !== "" ? ausSpalte : (options?.staatProForm?.[plzForm(rec.plz ?? "")] ?? "")
+    )
+      .trim()
+      .toUpperCase();
     if (anredezeileConfig.mode === "auto") {
       const spalte = anredezeileConfig.geschlechtSpalte;
       const geschlecht = spalte ? erkenneGeschlecht(row[spalte] ?? "") : null;
