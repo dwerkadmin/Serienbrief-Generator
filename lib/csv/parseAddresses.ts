@@ -75,7 +75,20 @@ export const CHART_FIELDS: { key: ChartField; label: string; hint: string }[] = 
   { key: "chartGesamtbeitrag", label: "Gesamtbeitrag", hint: "z.B. Spalte A1-Gesamtbeitrag" },
 ];
 
-export type ColumnMapping = Partial<Record<SimpleField | EmployerField | ChartField, string>>;
+// Persoenliche Zugangsdaten je Empfaenger - nur gebraucht, wenn Seite 2 mit der
+// Anmeldemaske arbeitet statt mit den allgemeinen Informationen (Schritt 3 im
+// Wizard). Der Freischaltcode bleibt davon unberuehrt, der steht weiter unter
+// Punkt 3 und ist ein eigenes Pflichtfeld.
+export type LoginField = "nutzername" | "portalpasswort";
+
+export const LOGIN_FIELDS: { key: LoginField; label: string; hint: string }[] = [
+  { key: "nutzername", label: "Nutzername", hint: "z.B. Spalte Nutzername" },
+  { key: "portalpasswort", label: "Passwort", hint: "z.B. Spalte Portalpasswort" },
+];
+
+export type ColumnMapping = Partial<
+  Record<SimpleField | EmployerField | ChartField | LoginField, string>
+>;
 
 // Briefanredezeile: entweder aus einer eigenen CSV-Spalte, oder automatisch aus
 // Vorname/Nachname nach einer der 4 festen Vorlagen erzeugt.
@@ -180,7 +193,9 @@ export type Recipient = Record<SimpleField, string> &
   /** Arbeitgeber-Daten, leer wenn nicht gemappt (siehe EMPLOYER_FIELDS) */
   Record<EmployerField, string> &
   /** Beitragsdaten für die Beitragsgrafik, leer wenn nicht gemappt (siehe CHART_FIELDS) */
-  Record<ChartField, string> & {
+  Record<ChartField, string> &
+  /** Zugangsdaten fürs Portal, leer wenn nicht gemappt (siehe LOGIN_FIELDS) */
+  Record<LoginField, string> & {
     anredezeile: string;
     /** komplette Rohzeile, falls weitere Spalten für spätere Erweiterungen gebraucht werden */
     raw: Record<string, string>;
@@ -243,7 +258,7 @@ function normalizeHeader(s: string): string {
 
 /** Versucht Spaltennamen automatisch den einfachen (+ Arbeitgeber-)Feldern zuzuordnen (Best-Effort, editierbar in der UI). */
 export function guessMapping(headers: string[]): ColumnMapping {
-  const table: Record<SimpleField | EmployerField | ChartField, string[]> = {
+  const table: Record<SimpleField | EmployerField | ChartField | LoginField, string[]> = {
     vorname: ["vorname", "firstname", "givenname"],
     nachname: ["nachname", "name", "lastname", "surname", "familyname"],
     // "ArbeitnehmerStrasseHauptwohnsitz" usw. ist die reale Spaltenbenennung
@@ -263,17 +278,25 @@ export function guessMapping(headers: string[]): ColumnMapping {
     chartSvErsparnis: ["a1sversparnis"],
     chartAgZuschuss: ["a1agzuschuss"],
     chartGesamtbeitrag: ["a1gesamtbeitrag"],
+    nutzername: ["nutzername", "benutzername", "username", "login"],
+    portalpasswort: ["portalpasswort", "passwort", "password", "kennwort"],
   };
   // Spaltennamen, die exakt den eigenen Feld-Labels entsprechen (z.B. "Straße + Hausnummer"),
   // sollen immer automatisch erkannt werden - unabhängig von der festen Kandidatenliste oben.
   const labelByField = Object.fromEntries(
-    [...SIMPLE_FIELDS, ...EMPLOYER_FIELDS, ...CHART_FIELDS].map((f) => [f.key, normalizeHeader(f.label)])
-  ) as Record<SimpleField | EmployerField | ChartField, string>;
+    [...SIMPLE_FIELDS, ...EMPLOYER_FIELDS, ...CHART_FIELDS, ...LOGIN_FIELDS].map((f) => [
+      f.key,
+      normalizeHeader(f.label),
+    ])
+  ) as Record<SimpleField | EmployerField | ChartField | LoginField, string>;
 
   const mapping: ColumnMapping = {};
   for (const header of headers) {
     const n = normalizeHeader(header);
-    for (const [field, candidates] of Object.entries(table) as [SimpleField | EmployerField | ChartField, string[]][]) {
+    for (const [field, candidates] of Object.entries(table) as [
+      SimpleField | EmployerField | ChartField | LoginField,
+      string[],
+    ][]) {
       if (mapping[field]) continue;
       if (candidates.includes(n) || n === labelByField[field]) mapping[field] = header;
     }
@@ -301,7 +324,11 @@ export function applyMapping(
   rows: Record<string, string>[],
   mapping: ColumnMapping,
   anredezeileConfig: AnredezeileConfig,
-  options?: { requireEmployerFields?: boolean; requireChartFields?: boolean }
+  options?: {
+    requireEmployerFields?: boolean;
+    requireChartFields?: boolean;
+    requireLoginFields?: boolean;
+  }
 ): Recipient[] {
   const missing = SIMPLE_FIELDS.filter((f) => !mapping[f.key]);
   if (missing.length) {
@@ -329,6 +356,16 @@ export function applyMapping(
       );
     }
   }
+  if (options?.requireLoginFields) {
+    const missingLogin = LOGIN_FIELDS.filter((f) => !mapping[f.key]);
+    if (missingLogin.length) {
+      throw new Error(
+        `Für die persönlichen Zugangsdaten auf Seite 2 bitte auch diese Spalten zuordnen: ${missingLogin
+          .map((m) => m.label)
+          .join(", ")}`
+      );
+    }
+  }
   if (anredezeileConfig.mode === "column" && !anredezeileConfig.column) {
     throw new Error("Bitte eine Spalte für die Briefanredezeile wählen (oder auf „Automatisch generieren“ umstellen).");
   }
@@ -344,6 +381,10 @@ export function applyMapping(
       rec[field.key] = header ? (row[header] ?? "").trim() : "";
     }
     for (const field of CHART_FIELDS) {
+      const header = mapping[field.key];
+      rec[field.key] = header ? (row[header] ?? "").trim() : "";
+    }
+    for (const field of LOGIN_FIELDS) {
       const header = mapping[field.key];
       rec[field.key] = header ? (row[header] ?? "").trim() : "";
     }

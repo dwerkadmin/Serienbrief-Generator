@@ -56,6 +56,7 @@ type ExportedConfig = {
   /** Erst ab dieser Fassung vorhanden - alte Dateien zeigen den Schriftzug wie bisher. */
   overlayZeigen?: boolean;
   overlayText?: string;
+  zugangsdatenZeigen?: boolean;
   beratungslinkSubdomain: string;
   beratungslinkDomain: string;
   /** Erst ab dieser Fassung vorhanden - alte Dateien haben die Felder nicht. */
@@ -140,6 +141,7 @@ export async function buildConfigExport(state: WizardState): Promise<string> {
     stockPhotoId: state.stockPhotoId,
     overlayZeigen: state.overlayZeigen,
     overlayText: state.overlayText,
+    zugangsdatenZeigen: state.zugangsdatenZeigen,
     beratungslinkSubdomain: state.beratungslinkSubdomain,
     beratungslinkDomain: state.beratungslinkDomain,
     beratungQrAktiv: state.beratungQrAktiv,
@@ -222,6 +224,7 @@ export function parseConfigImport(jsonText: string): Partial<WizardState> {
     stockPhotoId: config.stockPhotoId,
     overlayZeigen: config.overlayZeigen ?? true,
     overlayText: config.overlayText ?? "",
+    zugangsdatenZeigen: config.zugangsdatenZeigen ?? false,
     beratungslinkSubdomain: config.beratungslinkSubdomain,
     beratungslinkDomain: config.beratungslinkDomain,
     beratungQrAktiv: config.beratungQrAktiv ?? false,

@@ -6,6 +6,7 @@ import {
   ANREDE_TEMPLATES,
   CHART_FIELDS,
   EMPLOYER_FIELDS,
+  LOGIN_FIELDS,
   MAX_RECIPIENTS,
   SIMPLE_FIELDS,
   applyMapping,
@@ -99,6 +100,7 @@ export default function StepAddresses({ state, update }: StepProps) {
       preview = applyMapping(state.csvRows.slice(0, 5), state.mapping, state.anredezeileConfig, {
         requireEmployerFields: state.absenderAusCsv,
         requireChartFields: usesBeitragsgrafik,
+        requireLoginFields: state.zugangsdatenZeigen,
       });
     } catch (e) {
       mappingError = e instanceof Error ? e.message : "Zuordnung unvollständig.";
@@ -182,6 +184,41 @@ export default function StepAddresses({ state, update }: StepProps) {
               </div>
             ))}
           </div>
+
+          {state.zugangsdatenZeigen && (
+            <div className="rounded-lg border border-sky-200 bg-sky-50/50 p-4">
+              <label className="mb-2 block text-sm font-medium">
+                Persönliche Zugangsdaten (für Punkt 2 auf Seite 2)
+              </label>
+              <p className="mb-3 text-xs text-slate-500">
+                „Persönliche Zugangsdaten“ ist in Schritt 3 aktiviert — bitte die beiden Spalten
+                zuordnen. Der Freischaltcode oben bleibt davon unberührt, der steht weiter unter
+                Punkt 3.
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {LOGIN_FIELDS.map((field) => (
+                  <div key={field.key}>
+                    <label className="mb-1 block text-sm font-medium">{field.label}</label>
+                    <select
+                      value={state.mapping[field.key] ?? ""}
+                      onChange={(e) =>
+                        update({ mapping: { ...state.mapping, [field.key]: e.target.value || undefined } })
+                      }
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    >
+                      <option value="">— Spalte wählen —</option>
+                      {state.csvHeaders.map((h) => (
+                        <option key={h} value={h}>
+                          {h}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-0.5 text-xs text-slate-400">{field.hint}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {state.absenderAusCsv && (
             <div className="rounded-lg border border-sky-200 bg-sky-50/50 p-4">

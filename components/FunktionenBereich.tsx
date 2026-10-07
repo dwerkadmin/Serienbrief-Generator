@@ -91,6 +91,11 @@ const SCHRITTE: { nr: number; titel: string; punkte: React.ReactNode[] }[] = [
       <>
         <b>Persönlicher Freischaltcode</b> je Empfänger, hervorgehoben im eigenen Kasten.
       </>,
+      <>
+        <b>Persönliche Zugangsdaten</b> statt der allgemeinen Informationen unter Punkt 2 — für
+        Kampagnen mit Anmeldemaske. Nutzername und Passwort kommen je Empfänger aus der
+        Adressliste; der Freischaltcode bleibt unverändert unter Punkt 3.
+      </>,
     ],
   },
   {

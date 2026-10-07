@@ -25,6 +25,17 @@ export type Seite2Texte = {
   schritt3Text: string;
   codeLabel: string;
   schritt4Text: string;
+
+  /**
+   * Schritt 2 in der Fassung mit persönlichen Zugangsdaten: Statt der
+   * allgemeinen Erklärung steht dort dann die Anmeldemaske mit Nutzername und
+   * Portalpasswort je Empfänger. Schritt 3 bleibt davon unberührt, der
+   * Freischaltcode steht weiter dort.
+   */
+  zugangsdatenTitel: string;
+  zugangsdatenText: string;
+  nutzernameLabel: string;
+  passwortLabel: string;
 };
 
 const SIE: Seite2Texte = {
@@ -41,6 +52,12 @@ const SIE: Seite2Texte = {
   codeLabel: "Ihr persönlicher<br/>Freischaltcode:",
   schritt4Text:
     "Sofern Sie Ihren Wunschbetrag gefunden haben, können Sie direkt durch erneute Eingabe Ihres Freischaltcodes Ihre betriebliche Vorsorge beantragen.",
+
+  zugangsdatenTitel: "Persönliche Zugangsdaten",
+  zugangsdatenText:
+    "Nach dem Laden der Webseite erscheint die Anmeldemaske. Dort tragen Sie bitte Ihre persönlichen Zugangsdaten in die entsprechenden Felder ein. Ihre Zugangsdaten:",
+  nutzernameLabel: "Nutzername",
+  passwortLabel: "Passwort",
 };
 
 const DU: Seite2Texte = {
@@ -57,6 +74,12 @@ const DU: Seite2Texte = {
   codeLabel: "Dein persönlicher<br/>Freischaltcode:",
   schritt4Text:
     "Sofern du deinen Wunschbetrag gefunden hast, kannst du direkt durch erneute Eingabe deines Freischaltcodes deine betriebliche Vorsorge beantragen.",
+
+  zugangsdatenTitel: "Persönliche Zugangsdaten",
+  zugangsdatenText:
+    "Nach dem Laden der Webseite erscheint die Anmeldemaske. Dort trägst du bitte deine persönlichen Zugangsdaten in die entsprechenden Felder ein. Deine Zugangsdaten:",
+  nutzernameLabel: "Nutzername",
+  passwortLabel: "Passwort",
 };
 
 export function seite2Texte(duSie: DuSieMode): Seite2Texte {

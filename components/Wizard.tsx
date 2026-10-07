@@ -75,6 +75,7 @@ function buildFormData(state: WizardState, paket: Record<string, string>[]): For
   fd.set("photoMode", state.photoMode);
   if (state.photoMode === "upload" && state.photoFile) fd.set("photoFile", state.photoFile);
   if (state.photoMode === "stock") fd.set("stockPhotoId", state.stockPhotoId);
+  fd.set("zugangsdatenZeigen", String(state.zugangsdatenZeigen));
   fd.set("overlayZeigen", String(state.overlayZeigen));
   if (state.overlayZeigen) fd.set("overlayText", state.overlayText);
   fd.set("beratungslinkSubdomain", state.beratungslinkSubdomain);

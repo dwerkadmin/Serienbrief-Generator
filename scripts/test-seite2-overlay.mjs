@@ -1,6 +1,7 @@
 // Prueft Seite 2 in zwei Hinsichten:
 //  - den Schriftzug ueber dem Headerbild: Standardtext, eigener Text, aus.
 //  - die festen Texte der Seite in Du- und Sie-Form.
+//  - die Variante mit persoenlichen Zugangsdaten unter Punkt 2.
 //
 // Gemessen wird am Text der erzeugten PDF - eine PDF, die blosss entsteht, sagt
 // noch nicht, dass das Richtige drauf steht.
@@ -31,7 +32,12 @@ const login = await fetch(`${BASE}/api/auth`, {
 if (!login.ok) throw new Error(`Anmeldung fehlgeschlagen (${login.status})`);
 const cookie = login.headers.getSetCookie?.().join("; ") ?? login.headers.get("set-cookie") ?? "";
 
-const CSV = "Vorname,Nachname,Strasse,PLZ,Ort,Freischaltcode\nEva,Muster,Hauptstr. 1,12345,Musterstadt,ABCD1234\n";
+const CSV =
+  "Vorname,Nachname,Strasse,PLZ,Ort,Freischaltcode,Nutzername,Portalpasswort\n" +
+  "Eva,Muster,Hauptstr. 1,12345,Musterstadt,ABCD1234,DRABU9,PDzZxSsk6zNh\n";
+const FREISCHALTCODE = "ABCD1234";
+const NUTZERNAME = "DRABU9";
+const PASSWORT = "PDzZxSsk6zNh";
 
 async function erzeuge(felder) {
   const fd = new FormData();
@@ -65,6 +71,7 @@ async function erzeuge(felder) {
   fd.set("mapping", JSON.stringify({
     vorname: "Vorname", nachname: "Nachname", strasse: "Strasse",
     plz: "PLZ", ort: "Ort", freischaltcode: "Freischaltcode",
+    nutzername: "Nutzername", portalpasswort: "Portalpasswort",
   }));
   fd.set("anredezeileConfig", JSON.stringify({ mode: "auto", template: "liebe-vorname" }));
   for (const [k, v] of Object.entries(felder)) fd.set(k, v);
@@ -172,6 +179,46 @@ for (const modus of ["sie", "du"]) {
       );
     });
     zuviel.forEach((v) => console.error(`       falsche Form steht da: ${v.slice(0, 70)}…`));
+  }
+}
+
+// --- Punkt 2 wahlweise mit persoenlichen Zugangsdaten ---
+// Standard ist aus. Dann muss dort weiter die allgemeine Erklaerung stehen -
+// und vor allem duerfen Nutzername und Passwort nirgends auf der Seite
+// auftauchen; ein versehentlich mitgedrucktes Portalpasswort waere der
+// schlimmere Fehler von beiden.
+for (const modus of ["sie", "du"]) {
+  const t = seite2Texte(modus);
+
+  const mit = await seite2Text(await erzeuge({ duSieMode: modus, zugangsdatenZeigen: "true" }));
+  const fehltMit = [t.zugangsdatenTitel, t.zugangsdatenText, NUTZERNAME, PASSWORT].filter(
+    (e) => !kompakt(mit).includes(kompakt(e))
+  );
+  const nochAllgemein = kompakt(mit).includes(kompakt(t.schritt2Text));
+  const codeFehlt = !kompakt(mit).includes(kompakt(FREISCHALTCODE));
+
+  if (fehltMit.length === 0 && !nochAllgemein && !codeFehlt) {
+    console.log(`OK   Zugangsdaten an  (${modus === "du" ? "Du" : "Sie"})`);
+  } else {
+    fehler++;
+    console.error(`FEHLER Zugangsdaten an (${modus})`);
+    fehltMit.forEach((f) => console.error(`       fehlt: ${f.slice(0, 60)}…`));
+    if (nochAllgemein) console.error("       die allgemeine Erklaerung steht noch da");
+    if (codeFehlt) console.error("       der Freischaltcode fehlt unter Punkt 3");
+  }
+
+  const ohne = await seite2Text(await erzeuge({ duSieMode: modus, zugangsdatenZeigen: "false" }));
+  const durchgesickert = [NUTZERNAME, PASSWORT].filter((w) => kompakt(ohne).includes(kompakt(w)));
+  const allgemeinDa = kompakt(ohne).includes(kompakt(t.schritt2Text));
+  if (allgemeinDa && durchgesickert.length === 0) {
+    console.log(`OK   Zugangsdaten aus (${modus === "du" ? "Du" : "Sie"})`);
+  } else {
+    fehler++;
+    console.error(`FEHLER Zugangsdaten aus (${modus})`);
+    if (!allgemeinDa) console.error("       die allgemeine Erklaerung fehlt");
+    if (durchgesickert.length) {
+      console.error(`       steht trotzdem auf der Seite: ${durchgesickert.join(", ")}`);
+    }
   }
 }
 

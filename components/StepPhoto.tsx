@@ -106,6 +106,30 @@ export default function StepPhoto({ state, update }: StepProps) {
         <label className="flex items-center gap-2 text-sm font-medium">
           <input
             type="checkbox"
+            checked={state.zugangsdatenZeigen}
+            onChange={(e) => update({ zugangsdatenZeigen: e.target.checked })}
+            className="h-4 w-4 accent-sky-600"
+          />
+          Persönliche Zugangsdaten statt „Allgemeine Informationen“
+        </label>
+        <p className="mt-1 text-xs text-slate-500">
+          Für Kampagnen mit Anmeldemaske: Unter Punkt 2 auf Seite 2 stehen dann{" "}
+          <b>Nutzername und Passwort</b> des jeweiligen Empfängers statt der allgemeinen Erklärung.
+          Punkt 3 mit dem Freischaltcode bleibt unverändert.
+        </p>
+        {state.zugangsdatenZeigen && (
+          <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            In Schritt 4 müssen dafür zwei weitere Spalten zugeordnet werden:{" "}
+            <b>Nutzername</b> und <b>Passwort</b> (in dCRYPT-Exporten die Spalte
+            „Portalpasswort“).
+          </p>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-slate-200 p-4">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
             checked={state.overlayZeigen}
             onChange={(e) => update({ overlayZeigen: e.target.checked })}
             className="h-4 w-4 accent-sky-600"

@@ -40,6 +40,12 @@ export type LetterConfig = {
   overlayZeigen: boolean;
   /** Eigener Text dafür, Zeilenumbrüche werden übernommen; leer = Standardtext */
   overlayText: string;
+  /**
+   * Seite 2, Punkt 2: statt der allgemeinen Informationen die Anmeldemaske mit
+   * Nutzername und Passwort je Empfänger (Variante mit Verschlüsselung).
+   * Der Freischaltcode bleibt unverändert unter Punkt 3.
+   */
+  zugangsdatenZeigen: boolean;
   duSieMode: DuSieMode;
   beratungslinkUrl: string;
   qrCodeDataUrl: string; // vorab serverseitig generierter QR-Code (für beratungslinkUrl)
@@ -252,8 +258,17 @@ function renderPage2(config: LetterConfig, recipient: Recipient): string {
       <div class="p2-icon">${monitorIconSvg("info", color)}</div>
       <div class="p2-connector" style="border-color:${color}"></div>
       <div class="p2-step-body">
-        <div><span class="p2-pill p2-pill-inline" style="background:${color}">2.</span><strong>Allgemeine Informationen</strong></div>
-        <p>${escapeHtml(t.schritt2Text)}</p>
+        ${
+          config.zugangsdatenZeigen
+            ? `<div><span class="p2-pill p2-pill-inline" style="background:${color}">2.</span><strong>${escapeHtml(t.zugangsdatenTitel)}</strong></div>
+        <p>${escapeHtml(t.zugangsdatenText)}</p>
+        <div class="p2-zugangsdaten">
+          <div><span class="p2-zd-label">${escapeHtml(t.nutzernameLabel)}:</span><span class="p2-zd-wert" style="color:${color}">${escapeHtml(recipient.nutzername)}</span></div>
+          <div><span class="p2-zd-label">${escapeHtml(t.passwortLabel)}:</span><span class="p2-zd-wert" style="color:${color}">${escapeHtml(recipient.portalpasswort)}</span></div>
+        </div>`
+            : `<div><span class="p2-pill p2-pill-inline" style="background:${color}">2.</span><strong>Allgemeine Informationen</strong></div>
+        <p>${escapeHtml(t.schritt2Text)}</p>`
+        }
       </div>
     </div>
 
@@ -601,6 +616,16 @@ export function buildFullHtml(
   .p2-berater-kontakt { margin-top: 1.5mm; font-weight: 600; }
   /* Weißer Grund unter dem Code: QR-Leser brauchen den Kontrast, und der
      Rahmen darf nicht bis an die Module heranreichen. */
+  /* Zugangsdaten unter Punkt 2: Beschriftung und Wert nebeneinander, die beiden
+     Paare in einer Zeile - wie in der Vorlage des Kunden. */
+  .p2-zugangsdaten {
+    display: flex;
+    gap: 14mm;
+    margin-top: 2.5mm;
+  }
+  .p2-zd-label { font-weight: 700; margin-right: 2mm; }
+  .p2-zd-wert { font-weight: 700; word-break: break-all; }
+
   .p2-berater-qr {
     flex-shrink: 0;
     width: 24mm;

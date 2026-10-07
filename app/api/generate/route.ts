@@ -246,6 +246,11 @@ export async function POST(req: Request) {
   // Schriftzug ueber dem Headerbild: nur ausgeblendet, wenn ausdruecklich
   // abgewaehlt - aeltere Konfigurationen kennen das Feld nicht und sollen den
   // Text wie bisher zeigen.
+  // Seite 2 mit persoenlichen Zugangsdaten statt allgemeiner Informationen.
+  // Standard ist aus - aeltere Konfigurationen und Aufrufe ohne das Feld sollen
+  // die Seite unveraendert bekommen.
+  const zugangsdatenZeigen = form.get("zugangsdatenZeigen") === "true";
+
   const overlayZeigen = form.get("overlayZeigen") !== "false";
   const overlayText = String(form.get("overlayText") ?? "");
 
@@ -293,6 +298,7 @@ export async function POST(req: Request) {
       page2PhotoDataUrl,
       overlayZeigen,
       overlayText,
+      zugangsdatenZeigen,
       duSieMode,
       beratungslinkUrl,
       qrCodeDataUrl,
