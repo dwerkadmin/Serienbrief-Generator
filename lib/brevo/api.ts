@@ -5,7 +5,7 @@
  *
  * Läuft ausschließlich serverseitig - der API-Schlüssel darf den Server nicht
  * verlassen. Aufrufer ist app/api/brevo/*, und die Routen liegen hinter dem
- * Passwortschutz der App (siehe middleware.ts).
+ * Passwortschutz der App (siehe proxy.ts).
  *
  * Bewusst KEIN Sofortversand: der Generator legt die Kampagne als Entwurf an,
  * den Versand löst ein Mensch in Brevo aus - mit Brevos eigener Vorschau,

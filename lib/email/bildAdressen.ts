@@ -5,7 +5,7 @@
  * ein Bild in der Mail braucht also eine Adresse im Internet. Für die sechs
  * Standardmotive gibt es die bereits: sie liegen im öffentlichen Teil dieses
  * Generators und sind absichtlich von der Anmeldung ausgenommen (siehe den
- * matcher in middleware.ts). Ein hochgeladenes eigenes Foto hat dagegen keine
+ * matcher in proxy.ts). Ein hochgeladenes eigenes Foto hat dagegen keine
  * Adresse - es existiert nur im Arbeitsspeicher und muss vom Nutzer selbst
  * irgendwo abgelegt werden, am einfachsten in Brevo.
  */

@@ -1,7 +1,15 @@
+/**
+ * Passwortschutz fuer die ganze Anwendung.
+ *
+ * Hiess bis Next 16 "middleware.ts" mit einer Funktion "middleware" - seit
+ * 16.0 ist beides veraltet und heisst "proxy". Inhaltlich aendert sich nichts:
+ * derselbe matcher, dieselbe Pruefung, und die Node.js-Runtime galt hier schon
+ * vorher (Next behandelte die Datei intern bereits als Proxy).
+ */
 import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_COOKIE, isValidCookie } from "@/lib/auth";
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const cookie = req.cookies.get(AUTH_COOKIE)?.value;
   if (await isValidCookie(cookie)) {
     return NextResponse.next();
